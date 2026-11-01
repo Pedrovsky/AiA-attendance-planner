@@ -1054,7 +1054,7 @@
             let globalSlotIdx = 0;
             rowsContainer.innerHTML = rowGroups.map(group => {
                 return `
-                    <div class="flex justify-center items-center w-full gap-1.5 sm:gap-3 px-1">
+                    <div class="flex flex-nowrap justify-center items-center w-full gap-1 sm:gap-2 px-1">
                         ${group.map(slot => {
                             const curIdx = globalSlotIdx++;
                             const assignedName = pitchAssignments[curIdx];
