@@ -497,7 +497,6 @@
 
         // Wednesdays Practice Dates
         const practiceDates = [
-            { id: "p_2026-10-28", label: "Mi. 28.10.2026 (8:30 PM)", isoDate: "2026-10-28T20:30:00" },
             { id: "p_2026-11-04", label: "Mi. 04.11.2026 (8:30 PM)", isoDate: "2026-11-04T20:30:00" },
             { id: "p_2026-11-11", label: "Mi. 11.11.2026 (8:30 PM)", isoDate: "2026-11-11T20:30:00" },
             { id: "p_2026-11-18", label: "Mi. 18.11.2026 (8:30 PM)", isoDate: "2026-11-18T20:30:00" },
@@ -553,6 +552,9 @@
             // Populate Wednesday practice dropdown
             const pracSelect = document.getElementById('practiceDateSelect');
             pracSelect.innerHTML = practiceDates.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
+
+            const upcomingPrac = practiceDates.find(p => new Date(p.isoDate) >= new Date()) || practiceDates[0];
+            pracSelect.value = upcomingPrac.id;
 
             renderSchedule();
             renderPracticeCard();
@@ -727,50 +729,64 @@
         }
 
         function renderPracticeCard() {
-            const pracId = document.getElementById('practiceDateSelect').value || practiceDates[0].id;
-            const prac = practiceDates.find(p => p.id === pracId);
-            const pracAtt = attendance[prac.id] || {};
+    const now = new Date();
+    
+    // Find the first practice date that is today or in the future
+    const defaultUpcomingPrac = practiceDates.find(p => new Date(p.isoDate) >= now) || practiceDates[0];
+    
+    // Use selected value from dropdown if user changed it, otherwise default to upcoming
+    const pracSelectEl = document.getElementById('practiceDateSelect');
+    const selectedId = pracSelectEl ? pracSelectEl.value : null;
+    const pracId = selectedId || defaultUpcomingPrac.id;
+    
+    // Update dropdown selection visually if it hasn't been set yet
+    if (pracSelectEl && !selectedId) {
+        pracSelectEl.value = pracId;
+    }
 
-            const counts = {
-                yes: Object.values(pracAtt).filter(v => v === 'yes').length,
-                no: Object.values(pracAtt).filter(v => v === 'no').length,
-                injured: Object.values(pracAtt).filter(v => v === 'injured').length,
-                away: Object.values(pracAtt).filter(v => v === 'away').length
-            };
-            const userStatus = pracAtt[currentActiveUser] || 'none';
-            const past = isPast(prac.isoDate);
+    const prac = practiceDates.find(p => p.id === pracId) || practiceDates[0];
+    const pracAtt = attendance[prac.id] || {};
 
-            document.getElementById('practiceCardBox').innerHTML = `
-                <div class="flex flex-wrap justify-between items-center gap-2 cursor-pointer" onclick="openSessionModal('${prac.id}')">
-                    <div class="flex items-center gap-2">
-                        <span class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-users-rays text-aia-red mr-1"></i> ${prac.label}</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${past ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-800'}">
-                            ${past ? 'Completed' : 'Upcoming'}
-                        </span>
-                    </div>
+    const counts = {
+        yes: Object.values(pracAtt).filter(v => v === 'yes').length,
+        no: Object.values(pracAtt).filter(v => v === 'no').length,
+        injured: Object.values(pracAtt).filter(v => v === 'injured').length,
+        away: Object.values(pracAtt).filter(v => v === 'away').length
+    };
+    const userStatus = pracAtt[currentActiveUser] || 'none';
+    const past = isPast(prac.isoDate);
 
-                    <div class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 p-1.5 px-3 rounded-lg border">
-                        <span class="text-emerald-700" title="Going / Guests">✅ ${counts.yes}</span>
-                        <span class="text-rose-700">❌ ${counts.no}</span>
-                        <span class="text-amber-700">🩹 ${counts.injured}</span>
-                        <span class="text-blue-700">✈️ ${counts.away}</span>
-                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 ml-2"></i>
-                    </div>
-                </div>
+    document.getElementById('practiceCardBox').innerHTML = `
+        <div class="flex flex-wrap justify-between items-center gap-2 cursor-pointer" onclick="openSessionModal('${prac.id}')">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-users-rays text-aia-red mr-1"></i> ${prac.label}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${past ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-800'}">
+                    ${past ? 'Completed' : 'Upcoming'}
+                </span>
+            </div>
 
-                <div class="mt-3 flex flex-wrap items-center justify-between text-xs pt-2 border-t border-slate-100 gap-2" onclick="event.stopPropagation()">
-                    <span class="text-slate-500 font-medium">My RSVP (${currentActiveUser ? currentActiveUser.split(' ')[0] : 'Guest'}):</span>
-                    <div class="flex gap-1 flex-wrap items-center">
-                        <button onclick="setRSVP('${prac.id}', '${currentActiveUser}', 'yes')" title="Going" class="px-2.5 py-1 rounded-md font-bold text-xs transition ${userStatus === 'yes' ? 'bg-emerald-600 text-white' : 'bg-slate-100 hover:bg-emerald-100 text-slate-700'}">✅ Yes</button>
-                        <button onclick="setRSVP('${prac.id}', '${currentActiveUser}', 'no')" title="Not Going" class="px-2.5 py-1 rounded-md font-bold text-xs transition ${userStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100 hover:bg-rose-100 text-slate-700'}">❌ No</button>
-                        <button onclick="setRSVP('${prac.id}', '${currentActiveUser}', 'injured')" title="Injured" class="px-2.5 py-1 rounded-md font-bold text-xs transition ${userStatus === 'injured' ? 'bg-amber-500 text-white' : 'bg-slate-100 hover:bg-amber-100 text-slate-700'}">🩹 Injured</button>
-                        <button onclick="setRSVP('${prac.id}', '${currentActiveUser}', 'away')" title="Away" class="px-2.5 py-1 rounded-md font-bold text-xs transition ${userStatus === 'away' ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-blue-100 text-slate-700'}">✈️ Away</button>
-                        <button onclick="registerGuest('${prac.id}')" title="Bring a Guest" class="px-2.5 py-1 rounded-md font-bold text-xs transition bg-aia-gold text-aia-navy hover:bg-amber-400 ml-1">➕ Guest</button>
-                    </div>
-                </div>
-            `;
-        }
+            <div class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 p-1.5 px-3 rounded-lg border">
+                <span class="text-emerald-700" title="Going / Guests">✅ ${counts.yes}</span>
+                <span class="text-rose-700">❌ ${counts.no}</span>
+                <span class="text-amber-700">🩹 ${counts.injured}</span>
+                <span class="text-blue-700">✈️ ${counts.away}</span>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 ml-2"></i>
+            </div>
+        </div>
 
+        <div class="mt-3 flex flex-wrap items-center justify-between text-xs pt-2 border-t border-slate-100 gap-2" onclick="event.stopPropagation()">
+            <span class="text-slate-500 font-medium">My RSVP (${currentActiveUser ? currentActiveUser.split(' ')[0] : 'Guest'}):</span>
+            <div class="flex gap-1 flex-wrap items-center">
+                <button onclick="setRSVP('${prac.id}', '${currentActiveUser}', 'yes')" title="Going" class="px-2.5 py-1 rounded-md font-bold text-xs transition ${userStatus === 'yes' ? 'bg-emerald-600 text-white' : 'bg-slate-100 hover:bg-emerald-100 text-slate-700'}">✅ Yes</button>
+                <button onclick="setRSVP('${prac.id}', '${currentActiveUser}', 'no')" title="Not Going" class="px-2.5 py-1 rounded-md font-bold text-xs transition ${userStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100 hover:bg-rose-100 text-slate-700'}">❌ No</button>
+                <button onclick="setRSVP('${prac.id}', '${currentActiveUser}', 'injured')" title="Injured" class="px-2.5 py-1 rounded-md font-bold text-xs transition ${userStatus === 'injured' ? 'bg-amber-500 text-white' : 'bg-slate-100 hover:bg-amber-100 text-slate-700'}">🩹 Injured</button>
+                <button onclick="setRSVP('${prac.id}', '${currentActiveUser}', 'away')" title="Away" class="px-2.5 py-1 rounded-md font-bold text-xs transition ${userStatus === 'away' ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-blue-100 text-slate-700'}">✈️ Away</button>
+                <button onclick="registerGuest('${prac.id}')" title="Bring a Guest" class="px-2.5 py-1 rounded-md font-bold text-xs transition bg-aia-gold text-aia-navy hover:bg-amber-400 ml-1">➕ Guest</button>
+            </div>
+        </div>
+    `;
+}
+        
         function renderSchedule() {
             const upcomingContainer = document.getElementById('upcomingMatchesList');
             const pastContainer = document.getElementById('pastMatchesList');
