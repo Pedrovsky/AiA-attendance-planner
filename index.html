@@ -629,7 +629,7 @@
 
         function initData() {
             const nameSelect = document.getElementById('welcomeNameSelect');
-            nameSelect.innerHTML = rawSquad.map(p => `<option value="${p.name}">${p.name} (${p.pos})</option>`).join('');
+            nameSelect.innerHTML = rawSquad.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
             if (currentActiveUser) {
                 nameSelect.value = currentActiveUser;
                 document.getElementById('activeUserDisplay').textContent = currentActiveUser;
@@ -647,8 +647,8 @@
             pracSelect.value = upcomingPrac.id;
 
             const lineupMatchSel = document.getElementById('lineupMatchSelect');
-            const allSessions = [...practiceDates, ...matches];
-            lineupMatchSel.innerHTML = allSessions.map(s => `<option value="${s.id}">${s.label || (s.opponent ? (s.home ? 'vs ' + s.opponent : '@ ' + s.opponent) : s.id)}</option>`).join('');
+            const futureMatches = matches.filter(m => !isPast(m.isoDate));
+            lineupMatchSel.innerHTML = futureMatches.map(s => `<option value="${s.id}">${s.home ? 'vs ' + s.opponent : '@ ' + s.opponent} (${s.date})</option>`).join('');
 
             renderPracticeCard();
             renderMatches();
@@ -1001,62 +1001,76 @@
         }
 
         // Lineup Planner Logic
-        function getFormationSlots(tactic) {
-            if (tactic === '433') return [{pos:'GK',label:'GK'}, {pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'CDM'}, {pos:'MF',label:'CM'}, {pos:'FW',label:'LW'}, {pos:'FW',label:'ST'}, {pos:'FW',label:'RW'}];
-            if (tactic === '442') return [{pos:'GK',label:'GK'}, {pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}, {pos:'MF',label:'LM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'RM'}, {pos:'FW',label:'ST'}, {pos:'FW',label:'ST'}];
-            if (tactic === '352') return [{pos:'GK',label:'GK'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'MF',label:'LWB'}, {pos:'MF',label:'CDM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'CAM'}, {pos:'MF',label:'RWB'}, {pos:'FW',label:'ST'}, {pos:'FW',label:'ST'}];
-            if (tactic === '532') return [{pos:'GK',label:'GK'}, {pos:'DF',label:'LWB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RWB'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'CDM'}, {pos:'MF',label:'CM'}, {pos:'FW',label:'ST'}, {pos:'FW',label:'ST'}];
-            return [{pos:'GK',label:'GK'}, {pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}, {pos:'MF',label:'CDM'}, {pos:'MF',label:'CDM'}, {pos:'MF',label:'LAM'}, {pos:'MF',label:'CAM'}, {pos:'MF',label:'RAM'}, {pos:'FW',label:'ST'}];
-        }
-
-        function changeTactic() {
-            currentTactic = document.getElementById('tacticSelect').value;
-            document.getElementById('formationTitle').textContent = "Formation: " + currentTactic;
-            buildPitch();
-        }
-
-        function resetAndBuildLineup() {
-            const sessionId = document.getElementById('lineupMatchSelect').value;
-            if (!lineupData[sessionId]) lineupData[sessionId] = {};
-            pitchAssignments = lineupData[sessionId];
-            buildPitch();
-            renderAvailableSquadForLineup();
+        
+        function getFormationRows(tactic) {
+            // Returns array of rows from Top (Attack) to Bottom (Defense/GK)
+            if (tactic === '433') {
+                return [
+                    [{pos:'FW',label:'LW'}, {pos:'FW',label:'ST'}, {pos:'FW',label:'RW'}],
+                    [{pos:'MF',label:'CM'}, {pos:'MF',label:'CDM'}, {pos:'MF',label:'CM'}],
+                    [{pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}],
+                    [{pos:'GK',label:'GK'}]
+                ];
+            }
+            if (tactic === '442') {
+                return [
+                    [{pos:'FW',label:'ST'}, {pos:'FW',label:'ST'}],
+                    [{pos:'MF',label:'LM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'RM'}],
+                    [{pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}],
+                    [{pos:'GK',label:'GK'}]
+                ];
+            }
+            if (tactic === '352') {
+                return [
+                    [{pos:'FW',label:'ST'}, {pos:'FW',label:'ST'}],
+                    [{pos:'MF',label:'CAM'}],
+                    [{pos:'MF',label:'LWB'}, {pos:'MF',label:'CDM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'RWB'}],
+                    [{pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}],
+                    [{pos:'GK',label:'GK'}]
+                ];
+            }
+            if (tactic === '532') {
+                return [
+                    [{pos:'FW',label:'ST'}, {pos:'FW',label:'ST'}],
+                    [{pos:'MF',label:'CM'}, {pos:'MF',label:'CDM'}, {pos:'MF',label:'CM'}],
+                    [{pos:'DF',label:'LWB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RWB'}],
+                    [{pos:'GK',label:'GK'}]
+                ];
+            }
+            // Default: 4-2-3-1
+            return [
+                [{pos:'FW',label:'ST'}],                                                // Row 1: Striker
+                [{pos:'MF',label:'LAM'}, {pos:'MF',label:'CAM'}, {pos:'MF',label:'RAM'}], // Row 2: Attacking Midfielders
+                [{pos:'MF',label:'CDM'}, {pos:'MF',label:'CDM'}],                        // Row 3: Defensive Midfielders
+                [{pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}], // Row 4: Defense
+                [{pos:'GK',label:'GK'}]                                                 // Row 5: Goalkeeper
+            ];
         }
 
         function buildPitch() {
-            const slots = getFormationSlots(currentTactic);
+            const rowGroups = getFormationRows(currentTactic);
             const rowsContainer = document.getElementById('pitchRows');
             
-            const rowGroups = [
-                slots.slice(9, 11), // FW
-                slots.slice(7, 9),  // AM / Wide
-                slots.slice(5, 7),  // CM / DM
-                slots.slice(1, 5),  // DF
-                slots.slice(0, 1)   // GK
-            ];
-
-            let globalIdx = 0;
+            let globalSlotIdx = 0;
             rowsContainer.innerHTML = rowGroups.map(group => {
-                if (group.length === 0) return '';
                 return `
-                    <div class="flex justify-around items-center w-full px-4">
+                    <div class="flex justify-center items-center w-full gap-1.5 sm:gap-3 px-1">
                         ${group.map(slot => {
-                            const curIdx = slots.indexOf(slot, globalIdx);
-                            globalIdx = curIdx + 1;
+                            const curIdx = globalSlotIdx++;
                             const assignedName = pitchAssignments[curIdx];
                             const playerObj = rawSquad.find(p => p.name === assignedName);
 
                             return `
                                 <div onclick="handlePitchSlotClick(${curIdx}, '${slot.pos}')" 
                                      ontouchend="handlePitchSlotClick(${curIdx}, '${slot.pos}')"
-                                     class="w-20 sm:w-24 h-16 sm:h-20 bg-slate-900/80 hover:bg-slate-900 border-2 ${assignedName ? 'border-aia-gold bg-slate-900' : 'border-white/40'} rounded-xl flex flex-col items-center justify-center p-1 cursor-pointer transition shadow-md relative group">
-                                    <span class="text-[9px] font-black uppercase text-aia-gold bg-slate-800/80 px-1 rounded mb-0.5">${slot.label}</span>
+                                     class="flex-1 max-w-[85px] sm:max-w-[100px] h-14 sm:h-20 bg-slate-900/85 hover:bg-slate-900 border-2 ${assignedName ? 'border-aia-gold bg-slate-900' : 'border-white/40'} rounded-xl flex flex-col items-center justify-center p-1 cursor-pointer transition shadow-md relative">
+                                    <span class="text-[8px] sm:text-[9px] font-black uppercase text-aia-gold bg-slate-800/90 px-1 rounded mb-0.5">${slot.label}</span>
                                     ${assignedName ? `
-                                        <span class="text-[10px] sm:text-xs font-bold text-white text-center truncate w-full px-1">${assignedName.split(' ')[0]}</span>
-                                        <span class="text-[8px] text-slate-300">${playerObj ? playerObj.pos : ''} ★${playerObj ? playerObj.rating : ''}</span>
+                                        <span class="text-[9px] sm:text-xs font-bold text-white text-center truncate w-full px-0.5">${assignedName.split(' ')[0]}</span>
+                                        <span class="text-[7px] sm:text-[8px] text-slate-300">★${playerObj ? playerObj.rating : ''}</span>
                                         <button onclick="event.stopPropagation(); removePlayerFromPitch(${curIdx})" class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white rounded-full w-4 h-4 text-[9px] font-bold flex items-center justify-center shadow">&times;</button>
                                     ` : `
-                                        <span class="text-[10px] text-slate-400 font-semibold">+ Assign</span>
+                                        <span class="text-[9px] text-slate-400 font-semibold">+ Assign</span>
                                     `}
                                 </div>
                             `;
@@ -1067,93 +1081,6 @@
 
             const assignedCount = Object.keys(pitchAssignments).length;
             document.getElementById('startingCountLabel').textContent = `Starting 11: ${assignedCount} / 11`;
-        }
-
-        function renderAvailableSquadForLineup() {
-            const sessionId = document.getElementById('lineupMatchSelect').value;
-            const sessAtt = attendance[sessionId] || {};
-            
-            const attendingNames = Object.keys(sessAtt).filter(name => sessAtt[name] === 'yes');
-            document.getElementById('totalAttendingBadge').textContent = attendingNames.length + " Attending";
-
-            const assignedNames = Object.values(pitchAssignments);
-            const availableNames = attendingNames.length > 0 ? attendingNames : rawSquad.map(p => p.name);
-
-            const container = document.getElementById('positionPanelsContainer');
-            const positions = ['GK', 'DF', 'MF', 'FW'];
-
-            container.innerHTML = positions.map(pos => {
-                const playersInPos = rawSquad.filter(p => p.pos === pos && availableNames.includes(p.name));
-                return `
-                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-2">
-                        <div class="flex justify-between items-center text-xs font-extrabold text-slate-700 uppercase tracking-wider border-b pb-1">
-                            <span>${pos} (${playersInPos.length})</span>
-                        </div>
-                        <div class="space-y-1.5">
-                            ${playersInPos.map(p => {
-                                const isAssigned = assignedNames.includes(p.name);
-                                const isSelected = selectedPlayerForTap === p.name;
-                                return `
-                                    <div onclick="handleSquadPlayerClick('${p.name}')" 
-                                         class="flex justify-between items-center p-2 rounded-lg border text-xs cursor-pointer transition ${isSelected ? 'player-card-selected' : isAssigned ? 'bg-slate-200/60 opacity-60' : 'bg-white hover:bg-slate-100'}">
-                                        <div>
-                                            <span class="font-bold text-slate-900">${p.name}</span>
-                                            <span class="text-[10px] text-amber-500 font-bold ml-1">${'★'.repeat(p.rating)}</span>
-                                        </div>
-                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isAssigned ? 'bg-aia-gold text-aia-navy' : 'bg-emerald-100 text-emerald-800'}">
-                                            ${isAssigned ? 'On Pitch' : 'Ready'}
-                                        </span>
-                                    </div>
-                                `;
-                            }).join('') || '<p class="text-[11px] text-slate-400 italic">No players in this position.</p>'}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Build bench
-            const benchNames = availableNames.filter(name => !assignedNames.includes(name));
-            document.getElementById('benchCountBadge').textContent = benchNames.length + " Substitutes";
-            document.getElementById('substitutesBenchList').innerHTML = benchNames.map(name => {
-                const p = rawSquad.find(x => x.name === name) || { pos: '?', rating: 3 };
-                const isSelected = selectedPlayerForTap === name;
-                return `
-                    <div onclick="handleSquadPlayerClick('${name}')" class="px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition flex items-center gap-1.5 ${isSelected ? 'bg-red-50 border-aia-red text-aia-red' : 'bg-slate-50 hover:bg-slate-100 text-slate-800'}">
-                        <span>${name}</span>
-                        <span class="text-[10px] text-slate-500 font-normal">(${p.pos})</span>
-                    </div>
-                `;
-            }).join('') || '<p class="text-xs text-slate-400 italic">No substitutes on bench.</p>';
-        }
-
-        function handleSquadPlayerClick(playerName) {
-            selectedPlayerForTap = playerName;
-            document.getElementById('selectionStatusNotice').classList.remove('hidden');
-            document.getElementById('selectedPlayerText').textContent = playerName + " selected";
-            renderAvailableSquadForLineup();
-        }
-
-        function clearSelectedPlayer() {
-            selectedPlayerForTap = null;
-            document.getElementById('selectionStatusNotice').classList.add('hidden');
-            renderAvailableSquadForLineup();
-        }
-
-        function handlePitchSlotClick(slotIdx, expectedPos) {
-            if (selectedPlayerForTap) {
-                pitchAssignments[slotIdx] = selectedPlayerForTap;
-                const sessionId = document.getElementById('lineupMatchSelect').value;
-                lineupData[sessionId] = pitchAssignments;
-                localStorage.setItem('aia_lineups_v10', JSON.stringify(lineupData));
-                
-                selectedPlayerForTap = null;
-                document.getElementById('selectionStatusNotice').classList.add('hidden');
-                buildPitch();
-                renderAvailableSquadForLineup();
-            } else if (pitchAssignments[slotIdx]) {
-                const currentName = pitchAssignments[slotIdx];
-                handleSquadPlayerClick(currentName);
-            }
         }
 
         function removePlayerFromPitch(slotIdx) {
