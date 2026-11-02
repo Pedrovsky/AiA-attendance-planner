@@ -225,4 +225,484 @@
                     <p id="matchesSub" class="text-xs text-slate-500">Upcoming fixtures and past game results with 1-hour prior meeting times.</p>
                 </div>
                 <div class="text-right">
-                    <span id="currentUserLabel" class="text-xs font-bold text-aia-red bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+                    <span id="currentUserLabel" class="text-xs font-bold text-aia-red bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">Player View</span>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h3 id="upcomingHeading" class="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock"></i> Upcoming Matches
+                </h3>
+                <div class="grid md:grid-cols-2 gap-3" id="upcomingMatchesList"></div>
+            </div>
+
+            <div class="space-y-3 pt-4">
+                <h3 id="pastHeading" class="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-history"></i> Past Match Results
+                </h3>
+                <div class="grid md:grid-cols-2 gap-3" id="pastMatchesList"></div>
+            </div>
+        </section>
+
+        <!-- TAB 2: SQUAD & RATINGS (AND ADMIN PANEL) -->
+        <section id="sec-squad" class="hidden space-y-4">
+            <!-- ADMIN MANAGEMENT PANEL -->
+            <div id="adminPanelBox" class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl space-y-4 hidden border-2 border-slate-700">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="font-extrabold text-sm flex items-center gap-2 text-aia-gold">
+                        <i class="fa-solid fa-sliders"></i> Admin Management Controls
+                    </h3>
+                    <span class="bg-aia-gold text-aia-navy text-[10px] font-black px-2 py-0.5 rounded uppercase">Admin Active</span>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Add Player -->
+                    <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2">
+                        <h4 class="text-xs font-bold text-slate-200">Add New Player to Roster</h4>
+                        <div class="flex gap-2">
+                            <input type="text" id="newPlayerNameInput" placeholder="Full Player Name" class="bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs font-semibold text-white flex-1 focus:outline-none">
+                            <select id="newPlayerPosSelect" class="bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs font-bold text-white">
+                                <option value="GK">GK</option>
+                                <option value="DF">DF</option>
+                                <option value="MF">MF</option>
+                                <option value="FW">FW</option>
+                            </select>
+                            <button onclick="addNewPlayerToRoster()" class="bg-aia-red hover:bg-aia-darkRed text-white text-xs font-bold px-3 py-2 rounded-lg shadow">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Change Passcodes -->
+                    <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2">
+                        <h4 class="text-xs font-bold text-slate-200">Update Coach Mode Passcode</h4>
+                        <div class="flex gap-2">
+                            <input type="password" id="newCoachCodeInput" placeholder="New Passcode" maxlength="6" class="bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs font-bold text-white tracking-widest w-full focus:outline-none">
+                            <button onclick="updateCoachPasscode()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow whitespace-nowrap">Save Code</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                <div>
+                    <h2 id="squadHeading" class="text-base font-bold text-slate-900">Squad Roster & Ratings</h2>
+                    <p id="squadSub" class="text-xs text-slate-500">Coaches & Admins can set star ratings, positions, and edit player stats.</p>
+                </div>
+                <span id="squadTotalBadge" class="bg-red-50 text-aia-red border border-red-200 text-xs font-bold px-2.5 py-1 rounded-full">35 Players</span>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                                <th id="thName" class="py-3 px-4">Player Name</th>
+                                <th id="thPos" class="py-3 px-4">Position</th>
+                                <th id="thRating" class="py-3 px-4">Priority Rating</th>
+                                <th id="thStats" class="py-3 px-4">Stats (Apps / Goals)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="squadTable" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: LINEUP PLANNER -->
+        <section id="sec-lineup" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap justify-between items-center gap-3">
+                <div>
+                    <h2 id="lineupHeading" class="text-base font-bold text-slate-900">Tactical Match Lineup Planner</h2>
+                    <p id="lineupSub" class="text-xs text-slate-500">Sorted by coach priority rating (highest first).</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                    <div>
+                        <label class="text-[10px] text-slate-500 block font-bold">Roster View Filter:</label>
+                        <select id="lineupRosterFilter" onchange="renderAvailableSquadForLineup()" class="text-xs border border-slate-300 rounded-lg p-1.5 font-bold bg-slate-800 text-white">
+                            <option value="confirmed">Confirmed 'Yes' Only</option>
+                            <option value="all">All Squad Members</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 sm:flex-initial">
+                        <label id="lblSession" class="text-[10px] text-slate-500 block font-bold">Match / Session:</label>
+                        <select id="lineupMatchSelect" onchange="resetAndBuildLineup()" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 font-semibold bg-slate-50"></select>
+                    </div>
+                    <div>
+                        <label id="lblFormation" class="text-[10px] text-slate-500 block font-bold">Formation:</label>
+                        <select id="tacticSelect" onchange="changeTactic()" class="text-xs border border-slate-300 rounded-lg p-1.5 font-bold bg-aia-red text-white">
+                            <option value="4231">4-2-3-1</option>
+                            <option value="433">4-3-3</option>
+                            <option value="442">4-4-2</option>
+                            <option value="352">3-5-2</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="selectionStatusNotice" class="bg-slate-800 text-white p-2.5 px-4 rounded-xl text-xs flex justify-between items-center hidden border-l-4 border-l-aia-gold">
+                <span><i class="fa-solid fa-hand-pointer text-aia-gold mr-2"></i><strong id="selectedPlayerText">Player selected</strong> - Tap an open pitch slot.</span>
+                <button onclick="clearSelectedPlayer()" id="btnCancelSel" class="text-slate-400 hover:text-white font-bold ml-2">Cancel</button>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-xl relative overflow-hidden border-4 border-slate-800">
+                        <div class="text-center mb-3 flex justify-between items-center">
+                            <span id="formationTitle" class="bg-slate-800 text-aia-gold border border-aia-gold/30 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Formation: 4-2-3-1</span>
+                            <span id="startingCountLabel" class="text-xs text-slate-300 font-semibold bg-slate-800 px-2.5 py-1 rounded-lg">Starting 11: 0 / 11</span>
+                        </div>
+
+                        <div class="pitch-grid border-2 border-white/20 rounded-xl min-h-[480px] sm:min-h-[540px] relative p-3 flex flex-col justify-between shadow-inner">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-16 border-b-2 border-x-2 border-white/30 rounded-b-lg pointer-events-none"></div>
+                            <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-white/30 pointer-events-none"></div>
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/30 rounded-full pointer-events-none"></div>
+                            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-40 h-16 border-t-2 border-x-2 border-white/30 rounded-t-lg pointer-events-none"></div>
+
+                            <div id="pitchRows" class="relative z-10 h-full flex flex-col justify-between py-2 space-y-3"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-aia-gold">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                            <h3 id="benchTitle" class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-chair text-aia-red"></i> Substitutes Bench 
+                            </h3>
+                            <span id="benchCountBadge" class="bg-slate-100 text-slate-800 font-bold text-xs px-2.5 py-0.5 rounded-full">0 Substitutes</span>
+                        </div>
+                        <div id="substitutesBenchList" class="flex flex-wrap gap-2 min-h-[50px] items-center"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-2.5 mb-3">
+                            <h3 id="attendingTitle" class="font-extrabold text-slate-900 text-xs sm:text-sm">Available Roster</h3>
+                            <span id="totalAttendingBadge" class="bg-emerald-100 text-emerald-800 font-black text-xs px-2 py-0.5 rounded">0 Available</span>
+                        </div>
+                        <p id="attendingSub" class="text-[11px] text-slate-500 mb-3">Sorted by priority rating (highest stars first).</p>
+                        <div id="positionPanelsContainer" class="space-y-3 max-h-[560px] overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBy53VvrEx5oVpP-u9D740QP5rRPJE4mhs",
+            authDomain: "aia-vienna-portal.firebaseapp.com",
+            projectId: "aia-vienna-portal",
+            storageBucket: "aia-vienna-portal.firebasestorage.app",
+            messagingSenderId: "426388738779",
+            appId: "1:426388738779:web:f091cbc308374d6c9f72fe"
+        };
+
+        let db = null;
+        try {
+            if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+            }
+        } catch (e) {}
+
+        const SQUAD_NAMES = [
+            "Daniel Bartosch", "Bjarne Boekstegers", "Dong Choi", "Thomas Gangl", 
+            "Philip Gombas", "Pedro Gomes Saraiva", "Jonas Gründl", "Elias Heißenberger", 
+            "Joseph Heißenberger", "Rafael Heißenberger", "Tobias Heißenberger", 
+            "Johannes Igler", "Stefan Igler", "Dalibor Jovanovic", "Gregor Klammer", 
+            "Benedikt Kubas", "Gabriel Kubas", "Vadym Makogon", "Milan Maksic", 
+            "Johannes Mantler", "Hakim Ouaouich", "Kristof Paksanszki", "Patrick Pavlon", 
+            "Aron Petridis", "Dominik Pluta", "Andreas Ramberger", "Alexander Richter", 
+            "Jorge Luis Santana Villalobos", "Simon Schmidsberger", "Emil Schuhböck", 
+            "Dominik Tomek", "Jan Walega", "Andreas Wenzl", "Sebastian Gernot Wenzl", 
+            "Markus Wininger"
+        ];
+
+        let currentLang = localStorage.getItem('aia_lang_v10') || 'en';
+        let currentRole = 'player';
+        let currentActiveUser = localStorage.getItem('aia_user_identity_v10') || null;
+        let coachPasscode = localStorage.getItem('aia_coach_code_v10') || '1899';
+        let adminPasscode = localStorage.getItem('aia_admin_code_v10') || '1900';
+        let currentTactic = '4231';
+        let pitchAssignments = {}; 
+        let selectedPlayerForTap = null;
+
+        let userPins = JSON.parse(localStorage.getItem('aia_user_pins_v10') || '{}');
+
+        const defaultSquad = SQUAD_NAMES.map((name, idx) => {
+            let apps = 7;
+            let goals = 0;
+            if (name === "Jorge Luis Santana Villalobos") { apps = 11; goals = 9; }
+            else if (name === "Stefan Igler") { apps = 10; goals = 11; }
+            else if (name === "Alexander Richter") { apps = 10; goals = 6; }
+            else if (name === "Elias Heißenberger") { apps = 7; goals = 4; }
+            else if (name === "Rafael Heißenberger") { apps = 9; goals = 3; }
+            else if (name === "Tobias Heißenberger") { apps = 9; goals = 4; }
+            else if (name === "Joseph Heißenberger") { apps = 8; goals = 2; }
+            else if (name === "Andreas Wenzl") { apps = 10; goals = 2; }
+            else if (name === "Andreas Ramberger") { apps = 8; goals = 2; }
+            else if (name === "Dominik Tomek") { apps = 8; goals = 2; }
+            else if (name === "Gabriel Kubas") { apps = 5; goals = 2; }
+            else if (name === "Gregor Klammer") { apps = 9; goals = 2; }
+            else if (name === "Dong Choi") { apps = 6; goals = 1; }
+            else if (name === "Sebastian Gernot Wenzl") { apps = 8; goals = 0; }
+            else if (name === "Philip Gombas") { apps = 11; goals = 0; }
+            else if (name === "Pedro Gomes Saraiva") { apps = 10; goals = 0; }
+            else if (name === "Benedikt Kubas") { apps = 11; goals = 0; }
+
+            return {
+                name: name,
+                pos: idx % 4 === 0 ? 'GK' : idx % 3 === 0 ? 'DF' : idx % 2 === 0 ? 'MF' : 'FW',
+                apps: apps,
+                goals: goals,
+                rating: 0
+            };
+        });
+
+        let rawSquad = defaultSquad;
+        try {
+            const savedSquad = localStorage.getItem('aia_squad_data_v10');
+            if (savedSquad) {
+                const parsed = JSON.parse(savedSquad);
+                if (Array.isArray(parsed) && parsed.length > 0) rawSquad = parsed;
+            }
+        } catch(e) {}
+
+        const matches = [
+            { id: "m_1", isoDate: "2026-08-26T20:00:00", date: "Mi. 26.08. 20:00", type: "Testspiel", opponent: "DSG Athletik Kalksburg", score: "1:4", home: false },
+            { id: "m_2", isoDate: "2026-08-30T16:00:00", date: "So. 30.08. 16:00", type: "Cup", opponent: "Mariahilf", score: "4:3", home: true },
+            { id: "m_3", isoDate: "2026-09-06T17:00:00", date: "So. 06.09. 17:00", type: "Cup", opponent: "DSG Kasnudel Athletic Club", score: "1:3", home: true },
+            { id: "m_4", isoDate: "2026-09-12T19:00:00", date: "Sa. 12.09. 19:00", type: "Liga", opponent: "DSG Hotel Kalcio", score: "1:4", home: false },
+            { id: "m_5", isoDate: "2026-09-20T17:00:00", date: "So. 20.09. 17:00", type: "Liga", opponent: "DSG Milord BLANCO FC", score: "2:1", home: true },
+            { id: "m_6", isoDate: "2026-09-26T20:01:00", date: "Sa. 26.09. 20:01", type: "Liga", opponent: "DSG Kasnudel Athletic Club", score: "1:2", home: false },
+            { id: "m_7", isoDate: "2026-10-04T17:00:00", date: "So. 04.10. 17:00", type: "Liga", opponent: "DSG Vienna Falcons", score: "4:0", home: true },
+            { id: "m_8", isoDate: "2026-10-11T16:00:00", date: "So. 11.10. 16:00", type: "Liga", opponent: "DSG Play Together Now", score: "1:2", home: false },
+            { id: "m_9", isoDate: "2026-10-13T19:00:00", date: "Di. 13.10. 19:00", type: "Cup", opponent: "Liesing ASK", score: "5:4", home: true },
+            { id: "m_10", isoDate: "2026-10-18T19:30:00", date: "So. 18.10. 19:30", type: "Liga", opponent: "DSG Porzelona", score: "2:6", home: false },
+            { id: "m_11", isoDate: "2026-11-01T16:00:00", date: "So. 01.11. 16:00", type: "Liga", opponent: "DSG Los Andes FC", score: "5:2", home: true },
+            // Upcoming
+            { id: "m_12", isoDate: "2026-11-07T20:00:00", date: "Sa. 07.11. 20:00", type: "Liga", opponent: "DSG Wiener SK Lation", score: "-:-", home: false },
+            { id: "m_13", isoDate: "2026-11-15T16:00:00", date: "So. 15.11. 16:00", type: "Liga", opponent: "DSG Pötzleinsdorf 1.SC", score: "-:-", home: true },
+            { id: "m_14", isoDate: "2026-11-22T14:00:00", date: "So. 22.11. 14:00", type: "Liga", opponent: "DSG Eurasya", score: "-:-", home: false },
+            { id: "m_15", isoDate: "2026-11-29T16:00:00", date: "So. 29.11. 16:00", type: "Liga", opponent: "DSG Spice Balls All Stars", score: "-:-", home: true },
+            { id: "m_16", isoDate: "2026-12-13T00:00:00", date: "So. 13.12. 00:00", type: "Cup", opponent: "Columbia Floridsdorf", score: "-:-", home: true }
+        ];
+
+        let practiceDates = JSON.parse(localStorage.getItem('aia_practice_dates_v10') || JSON.stringify([
+            { id: "p_2026-11-04", label: "Mi. 04.11.2026 (8:30 PM)", isoDate: "2026-11-04T20:30:00" },
+            { id: "p_2026-11-11", label: "Mi. 11.11.2026 (8:30 PM)", isoDate: "2026-11-11T20:30:00" },
+            { id: "p_2026-11-18", label: "Mi. 18.11.2026 (8:30 PM)", isoDate: "2026-11-18T20:30:00" },
+            { id: "p_2026-11-25", label: "Mi. 25.11.2026 (8:30 PM)", isoDate: "2026-11-25T20:30:00" }
+        ]));
+
+        let attendance = JSON.parse(localStorage.getItem('aia_attendance_v10') || '{}');
+        let sessionGuests = JSON.parse(localStorage.getItem('aia_guests_v10') || '{}');
+        let lineupData = JSON.parse(localStorage.getItem('aia_lineups_v10') || '{}');
+
+        const t = {
+            en: {
+                welcomeTitle: "Welcome to Athletes in Action",
+                welcomeSub: "Select your name to sign in or create your security PIN.",
+                selectName: "Select Your Name:",
+                enterPin: "Enter 4-Digit Security PIN:",
+                pinSub: "First time logging in? Choose a 4-digit PIN you'll remember.",
+                signInBtn: "Sign In to Team Portal",
+                registerBtn: "Register PIN & Continue",
+                coachModalTitle: "Coach Mode Passcode",
+                coachModalSub: "Enter coach passcode to access strategy and lineups.",
+                cancel: "Cancel",
+                unlock: "Unlock",
+                headerSub: "DSG Unterliga A • Official Portal",
+                loggedAs: "Logged as:",
+                switch: "Switch",
+                playerRole: "Player",
+                coachRole: "Coach",
+                navSchedule: "Schedule & RSVP",
+                navSquad: "Squad & Ratings",
+                navLineup: "Lineup Planner",
+                weeklySession: "WEEKLY SESSION",
+                wedPractice: "Wednesday Practice (8:30 – 10:00 PM)",
+                practiceSub: "Select practice date to set your RSVP or bring a guest.",
+                dateLabel: "Date:",
+                officialMatches: "Official Matches",
+                matchesSub: "Upcoming fixtures and past game results with 1-hour prior meeting times.",
+                upcomingMatches: "Upcoming Matches",
+                pastMatches: "Past Match Results",
+                squadHeading: "Squad Roster & Ratings",
+                squadSub: "Coaches can set player star ratings to prioritize starting 11 selection.",
+                thName: "Player Name",
+                thPos: "Position",
+                thRating: "Priority Rating",
+                thStats: "Stats",
+                lineupHeading: "Tactical Match Lineup Planner",
+                lineupSub: "Sorted by coach priority rating (highest first).",
+                lblSession: "Match / Session:",
+                lblFormation: "Formation:",
+                playerSelected: "Player selected",
+                cancelSel: "Cancel",
+                benchTitle: "Substitutes Bench",
+                attendingTitle: "Available Roster",
+                attendingSub: "Sorted by priority rating (highest stars first).",
+                meetingTime: "Meeting Time (Treffpunkt):",
+                addGuest: "Add Guest",
+                guestNamePlaceholder: "Guest Name",
+                myRsvp: "My RSVP:",
+                yes: "✅ Yes",
+                no: "❌ No",
+                lblCreatePractice: "Add New Wednesday Practice Session",
+                btnAddPractice: "+ Add Wednesday Practice"
+            },
+            de: {
+                welcomeTitle: "Willkommen bei Athletes in Action",
+                welcomeSub: "Wähle deinen Namen aus, um dich anzumelden oder eine PIN zu erstellen.",
+                selectName: "Wähle deinen Namen:",
+                enterPin: "4-stellige Sicherheits-PIN eingeben:",
+                pinSub: "Erstes Mal hier? Wähle eine 4-stellige PIN, die du dir merkst.",
+                signInBtn: "Im Team-Portal anmelden",
+                registerBtn: "PIN registrieren & fortfahren",
+                coachModalTitle: "Trainer-Modus PIN",
+                coachModalSub: "Gib den Trainer-Code ein, um Taktik & Aufstellung zu öffnen.",
+                cancel: "Abbrechen",
+                unlock: "Freischalten",
+                headerSub: "DSG Unterliga A • Offizielles Portal",
+                loggedAs: "Eingeloggt als:",
+                switch: "Wechseln",
+                playerRole: "Spieler",
+                coachRole: "Trainer",
+                navSchedule: "Zeitplan & Anmeldung",
+                navSquad: "Kader & Bewertungen",
+                navLineup: "Aufstellungsplaner",
+                weeklySession: "WÖCHENTLICHES TRAINING",
+                wedPractice: "Mittwochtraining (20:30 – 22:00 Uhr)",
+                practiceSub: "Wähle ein Datum, um zu bestätigen oder einen Gast einzutragen.",
+                dateLabel: "Datum:",
+                officialMatches: "Offizielle Spiele",
+                matchesSub: "Kommende Begegnungen & Spielergebnisse mit Treffpunkt 1 Stunde vor Anpfiff.",
+                upcomingMatches: "Kommende Spiele",
+                pastMatches: "Vergangene Spielergebnisse",
+                squadHeading: "Kader & Bewertungen",
+                squadSub: "Trainer können Sterne vergeben, um die Startelf-Priorität festzulegen.",
+                thName: "Spielername",
+                thPos: "Position",
+                thRating: "Prioritäts-Bewertung",
+                thStats: "Statistik",
+                lineupHeading: "Taktischer Aufstellungsplaner",
+                lineupSub: "Sortiert nach Trainerpriorität (höchste zuerst).",
+                lblSession: "Spiel / Session:",
+                lblFormation: "Formation:",
+                playerSelected: "Spieler ausgewählt",
+                cancelSel: "Abbrechen",
+                benchTitle: "Ersatzbank",
+                attendingTitle: "Verfügbarer Kader",
+                attendingSub: "Sortiert nach Prioritätsbewertung (Sterne).",
+                meetingTime: "Treffpunkt (1h vor Anpfiff):",
+                addGuest: "Gast hinzufügen",
+                guestNamePlaceholder: "Gastname",
+                myRsvp: "Meine Zusage:",
+                yes: "✅ Ja",
+                no: "❌ Nein",
+                lblCreatePractice: "Neues Mittwochtraining hinzufügen",
+                btnAddPractice: "+ Mittwochtraining hinzufügen"
+            }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('aia_lang_v10', lang);
+            
+            if (lang === 'de') {
+                document.getElementById('langDeBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all bg-aia-red text-white shadow";
+                document.getElementById('langEnBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+            } else {
+                document.getElementById('langEnBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all bg-aia-red text-white shadow";
+                document.getElementById('langDeBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+            }
+
+            updateTextContent();
+            renderPracticeSelect();
+            renderPracticeCard();
+            renderMatches();
+            renderSquadTable();
+            resetAndBuildLineup();
+        }
+
+        function updateTextContent() {
+            const dict = t[currentLang];
+            document.getElementById('mTitle').textContent = dict.welcomeTitle;
+            document.getElementById('mSub').textContent = dict.welcomeSub;
+            document.getElementById('lblSelectName').textContent = dict.selectName;
+            document.getElementById('lblPin').textContent = dict.enterPin;
+            document.getElementById('pinSubtext').textContent = dict.pinSub;
+            
+            const selName = document.getElementById('welcomeNameSelect').value;
+            document.getElementById('authBtnText').textContent = userPins[selName] ? dict.signInBtn : dict.registerBtn;
+            
+            document.getElementById('cModalTitle').textContent = dict.coachModalTitle;
+            document.getElementById('cModalSub').textContent = dict.coachModalSub;
+            document.getElementById('btnCancel').textContent = dict.cancel;
+            document.getElementById('btnUnlock').textContent = dict.unlock;
+
+            document.getElementById('headerSub').textContent = dict.headerSub;
+            document.getElementById('txtLoggedAs').textContent = dict.loggedAs;
+            document.getElementById('txtSwitch').textContent = dict.switch;
+            document.getElementById('lblPlayerRole').textContent = dict.playerRole;
+            document.getElementById('lblCoachRole').textContent = dict.coachRole;
+
+            document.getElementById('navSchedule').textContent = dict.navSchedule;
+            document.getElementById('navSquad').textContent = dict.navSquad;
+            document.getElementById('navLineup').textContent = dict.navLineup;
+
+            document.getElementById('badgeWeekly').textContent = dict.weeklySession;
+            document.getElementById('practiceHeading').textContent = dict.wedPractice;
+            document.getElementById('practiceSub').textContent = dict.practiceSub;
+            document.getElementById('lblDate').textContent = dict.dateLabel;
+
+            document.getElementById('matchesHeading').textContent = dict.officialMatches;
+            document.getElementById('matchesSub').textContent = dict.matchesSub;
+            document.getElementById('upcomingHeading').innerHTML = `<i class="fa-solid fa-clock"></i> ${dict.upcomingMatches}`;
+            document.getElementById('pastHeading').innerHTML = `<i class="fa-solid fa-history"></i> ${dict.pastMatches}`;
+
+            document.getElementById('squadHeading').textContent = dict.squadHeading;
+            document.getElementById('squadSub').textContent = dict.squadSub;
+            document.getElementById('thName').textContent = dict.thName;
+            document.getElementById('thPos').textContent = dict.thPos;
+            document.getElementById('thRating').textContent = dict.thRating;
+            document.getElementById('thStats').textContent = dict.thStats;
+
+            document.getElementById('lineupHeading').textContent = dict.lineupHeading;
+            document.getElementById('lineupSub').textContent = dict.lineupSub;
+            document.getElementById('lblSession').textContent = dict.lblSession;
+            document.getElementById('lblFormation').textContent = dict.lblFormation;
+            document.getElementById('btnCancelSel').textContent = dict.cancelSel;
+            document.getElementById('benchTitle').innerHTML = `<i class="fa-solid fa-chair text-aia-red"></i> ${dict.benchTitle}`;
+            document.getElementById('attendingTitle').textContent = dict.attendingTitle;
+            document.getElementById('attendingSub').textContent = dict.attendingSub;
+
+            document.getElementById('lblCreatePractice').textContent = dict.lblCreatePractice;
+            document.getElementById('btnAddPractice').textContent = dict.btnAddPractice;
+        }
+
+        function isPast(isoDateStr) {
+            return new Date(isoDateStr) < new Date();
+        }
+
+        function getMeetingTime(isoDateStr) {
+            const d = new Date(isoDateStr);
+            d.setHours(d.getHours() - 1);
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function populateRosterWithoutPositions() {
+            const selectEl = document.getElementById('welcomeNameSelect');
+            if (selectEl) {
+                const currentVal = selectEl.value;
+                selectEl.innerHTML = rawSquad.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+                if (currentVal && rawSquad.some(p => p.name === currentVal)) {
+                    selectEl.value = currentVal;
+                }
+            }
+            const squadBadge = document.getElementById('squadTotalBadge');
+            if (squadBadge) squadBadge.textContent = rawSquad.length + " Players";
+        }
+
+        function checkUserPinStatus() {
+            const selectEl
