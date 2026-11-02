@@ -102,6 +102,29 @@
         </div>
     </div>
 
+    <!-- ADMIN AUTH MODAL -->
+    <div id="adminAuthModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+            <div class="text-center">
+                <div class="w-10 h-10 bg-slate-800 text-aia-gold font-black text-lg rounded-xl flex items-center justify-center mx-auto shadow">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <h3 class="text-base font-extrabold text-slate-900 mt-2">Admin Passcode</h3>
+                <p class="text-xs text-slate-500">Enter Admin passcode to manage roster & coach settings.</p>
+            </div>
+
+            <div class="space-y-3">
+                <input type="password" id="adminPasscodeInput" placeholder="Passcode (Default: 1900)" class="w-full text-center tracking-widest text-lg font-bold bg-slate-50 border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-slate-800 focus:outline-none">
+                <p id="adminAuthError" class="text-xs text-rose-600 font-bold text-center hidden">Incorrect Admin Passcode</p>
+
+                <div class="flex gap-2">
+                    <button onclick="closeAdminAuthModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs">Cancel</button>
+                    <button onclick="verifyAdminPasscode()" class="w-1/2 bg-slate-900 hover:bg-black text-white font-bold py-2 rounded-xl text-xs shadow">Unlock Admin</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Top Header -->
     <header class="bg-aia-navy text-white shadow-lg sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
@@ -132,11 +155,14 @@
                 </div>
 
                 <div class="bg-slate-800 p-1 rounded-lg border border-slate-700 flex items-center gap-1 text-xs">
-                    <button id="rolePlayerBtn" onclick="switchToPlayerRole()" class="px-2.5 py-1 rounded-md font-bold transition-all bg-aia-red text-white shadow">
+                    <button id="rolePlayerBtn" onclick="switchToPlayerRole()" class="px-2 py-1 rounded-md font-bold transition-all bg-aia-red text-white shadow">
                         <i class="fa-solid fa-user mr-1"></i> <span id="lblPlayerRole">Player</span>
                     </button>
-                    <button id="roleCoachBtn" onclick="requestCoachRole()" class="px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white">
-                        <i class="fa-solid fa-clipboard-user mr-1"></i> <span id="lblCoachRole">Coach Mode</span>
+                    <button id="roleCoachBtn" onclick="requestCoachRole()" class="px-2 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white">
+                        <i class="fa-solid fa-clipboard-user mr-1"></i> <span id="lblCoachRole">Coach</span>
+                    </button>
+                    <button id="roleAdminBtn" onclick="requestAdminRole()" class="px-2 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white">
+                        <i class="fa-solid fa-user-shield mr-1"></i> <span>Admin</span>
                     </button>
                 </div>
             </div>
@@ -218,8 +244,44 @@
             </div>
         </section>
 
-        <!-- TAB 2: SQUAD & RATINGS -->
+        <!-- TAB 2: SQUAD & RATINGS (AND ADMIN PANEL) -->
         <section id="sec-squad" class="hidden space-y-4">
+            <!-- ADMIN MANAGEMENT PANEL -->
+            <div id="adminPanelBox" class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl space-y-4 hidden border-2 border-slate-700">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="font-extrabold text-sm flex items-center gap-2 text-aia-gold">
+                        <i class="fa-solid fa-sliders"></i> Admin Management Controls
+                    </h3>
+                    <span class="bg-aia-gold text-aia-navy text-[10px] font-black px-2 py-0.5 rounded uppercase">Admin Active</span>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Add Player -->
+                    <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2">
+                        <h4 class="text-xs font-bold text-slate-200">Add New Player to Roster</h4>
+                        <div class="flex gap-2">
+                            <input type="text" id="newPlayerNameInput" placeholder="Full Player Name" class="bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs font-semibold text-white flex-1 focus:outline-none">
+                            <select id="newPlayerPosSelect" class="bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs font-bold text-white">
+                                <option value="GK">GK</option>
+                                <option value="DF">DF</option>
+                                <option value="MF">MF</option>
+                                <option value="FW">FW</option>
+                            </select>
+                            <button onclick="addNewPlayerToRoster()" class="bg-aia-red hover:bg-aia-darkRed text-white text-xs font-bold px-3 py-2 rounded-lg shadow">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Change Passcodes -->
+                    <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2">
+                        <h4 class="text-xs font-bold text-slate-200">Update Coach Mode Passcode</h4>
+                        <div class="flex gap-2">
+                            <input type="password" id="newCoachCodeInput" placeholder="New Passcode" maxlength="6" class="bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs font-bold text-white tracking-widest w-full focus:outline-none">
+                            <button onclick="updateCoachPasscode()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow whitespace-nowrap">Save Code</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
                 <div>
                     <h2 id="squadHeading" class="text-base font-bold text-slate-900">Squad Roster & Ratings</h2>
@@ -250,9 +312,16 @@
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap justify-between items-center gap-3">
                 <div>
                     <h2 id="lineupHeading" class="text-base font-bold text-slate-900">Tactical Match Lineup Planner</h2>
-                    <p id="lineupSub" class="text-xs text-slate-500">Sorted by coach priority rating (highest first). Shows confirmed 'Yes' players.</p>
+                    <p id="lineupSub" class="text-xs text-slate-500">Sorted by coach priority rating (highest first).</p>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                    <div>
+                        <label class="text-[10px] text-slate-500 block font-bold">Roster View Filter:</label>
+                        <select id="lineupRosterFilter" onchange="renderAvailableSquadForLineup()" class="text-xs border border-slate-300 rounded-lg p-1.5 font-bold bg-slate-800 text-white">
+                            <option value="confirmed">Confirmed 'Yes' Only</option>
+                            <option value="all">All Squad Members</option>
+                        </select>
+                    </div>
                     <div class="flex-1 sm:flex-initial">
                         <label id="lblSession" class="text-[10px] text-slate-500 block font-bold">Match / Session:</label>
                         <select id="lineupMatchSelect" onchange="resetAndBuildLineup()" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 font-semibold bg-slate-50"></select>
@@ -306,8 +375,8 @@
                 <div class="space-y-4">
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                         <div class="flex justify-between items-center border-b border-slate-100 pb-2.5 mb-3">
-                            <h3 id="attendingTitle" class="font-extrabold text-slate-900 text-xs sm:text-sm">Confirmed Attending</h3>
-                            <span id="totalAttendingBadge" class="bg-emerald-100 text-emerald-800 font-black text-xs px-2 py-0.5 rounded">0 Attending</span>
+                            <h3 id="attendingTitle" class="font-extrabold text-slate-900 text-xs sm:text-sm">Available Roster</h3>
+                            <span id="totalAttendingBadge" class="bg-emerald-100 text-emerald-800 font-black text-xs px-2 py-0.5 rounded">0 Available</span>
                         </div>
                         <p id="attendingSub" class="text-[11px] text-slate-500 mb-3">Sorted by priority rating (highest stars first).</p>
                         <div id="positionPanelsContainer" class="space-y-3 max-h-[560px] overflow-y-auto pr-1"></div>
@@ -318,7 +387,6 @@
     </main>
 
     <script>
-        // Your exact Firebase project configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBy53VvrEx5oVpP-u9D740QP5rRPJE4mhs",
             authDomain: "aia-vienna-portal.firebaseapp.com",
@@ -334,9 +402,7 @@
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
             }
-        } catch (e) {
-            console.log("Running in offline local storage mode.");
-        }
+        } catch (e) {}
 
         const SQUAD_NAMES = [
             "Daniel Bartosch", "Bjarne Boekstegers", "Dong Choi", "Thomas Gangl", 
@@ -355,13 +421,13 @@
         let currentRole = 'player';
         let currentActiveUser = localStorage.getItem('aia_user_identity_v10') || null;
         let coachPasscode = localStorage.getItem('aia_coach_code_v10') || '1899';
+        let adminPasscode = localStorage.getItem('aia_admin_code_v10') || '1900';
         let currentTactic = '4231';
         let pitchAssignments = {}; 
         let selectedPlayerForTap = null;
 
         let userPins = JSON.parse(localStorage.getItem('aia_user_pins_v10') || '{}');
 
-        // Accurate squad stats (Elias scored, Sebastian Wenzl goal count corrected)
         const defaultSquad = SQUAD_NAMES.map((name, idx) => {
             let apps = 7;
             let goals = 0;
@@ -449,7 +515,7 @@
                 loggedAs: "Logged as:",
                 switch: "Switch",
                 playerRole: "Player",
-                coachRole: "Coach Mode",
+                coachRole: "Coach",
                 navSchedule: "Schedule & RSVP",
                 navSquad: "Squad & Ratings",
                 navLineup: "Lineup Planner",
@@ -468,13 +534,13 @@
                 thRating: "Priority Rating",
                 thStats: "Stats",
                 lineupHeading: "Tactical Match Lineup Planner",
-                lineupSub: "Sorted by coach priority rating (highest first). Shows confirmed 'Yes' players.",
+                lineupSub: "Sorted by coach priority rating (highest first).",
                 lblSession: "Match / Session:",
                 lblFormation: "Formation:",
                 playerSelected: "Player selected",
                 cancelSel: "Cancel",
                 benchTitle: "Substitutes Bench",
-                attendingTitle: "Confirmed Attending",
+                attendingTitle: "Available Roster",
                 attendingSub: "Sorted by priority rating (highest stars first).",
                 meetingTime: "Meeting Time (Treffpunkt):",
                 addGuest: "Add Guest",
@@ -501,7 +567,7 @@
                 loggedAs: "Eingeloggt als:",
                 switch: "Wechseln",
                 playerRole: "Spieler",
-                coachRole: "Trainer-Modus",
+                coachRole: "Trainer",
                 navSchedule: "Zeitplan & Anmeldung",
                 navSquad: "Kader & Bewertungen",
                 navLineup: "Aufstellungsplaner",
@@ -520,13 +586,13 @@
                 thRating: "Prioritäts-Bewertung",
                 thStats: "Statistik",
                 lineupHeading: "Taktischer Aufstellungsplaner",
-                lineupSub: "Sortiert nach Trainerpriorität (höchste zuerst). Zeigt zugesagte Spieler.",
+                lineupSub: "Sortiert nach Trainerpriorität (höchste zuerst).",
                 lblSession: "Spiel / Session:",
                 lblFormation: "Formation:",
                 playerSelected: "Spieler ausgewählt",
                 cancelSel: "Abbrechen",
                 benchTitle: "Ersatzbank",
-                attendingTitle: "Bestätigte Zusagen",
+                attendingTitle: "Verfügbarer Kader",
                 attendingSub: "Sortiert nach Prioritätsbewertung (Sterne).",
                 meetingTime: "Treffpunkt (1h vor Anpfiff):",
                 addGuest: "Gast hinzufügen",
@@ -628,8 +694,10 @@
         function populateRosterWithoutPositions() {
             const selectEl = document.getElementById('welcomeNameSelect');
             if (selectEl) {
-                selectEl.innerHTML = SQUAD_NAMES.map(name => `<option value="${name}">${name}</option>`).join('');
+                selectEl.innerHTML = rawSquad.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
             }
+            const squadBadge = document.getElementById('squadTotalBadge');
+            if (squadBadge) squadBadge.textContent = rawSquad.length + " Players";
         }
 
         function checkUserPinStatus() {
@@ -670,7 +738,7 @@
                 syncCloudState();
             } else if (userPins[name] !== pin) {
                 errEl.textContent = currentLang === 'de' ? "Falsche PIN. Bitte erneut versuchen." : "Incorrect PIN. Please try again.";
-                errEl.classList.remove('hidden');
+                errEl.classList.add('hidden');
                 return;
             }
 
@@ -727,6 +795,22 @@
                     pracSelect.value = curVal;
                 }
             }
+
+            const lineupMatchSel = document.getElementById('lineupMatchSelect');
+            if (lineupMatchSel) {
+                const curLineupVal = lineupMatchSel.value;
+                const allSessions = [
+                    ...practiceDates.map(p => ({ id: p.id, label: `Practice: ${p.label}` })),
+                    ...matches.map(m => ({ id: m.id, label: `Match: vs ${m.opponent} (${m.date})` }))
+                ];
+                lineupMatchSel.innerHTML = allSessions.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+                
+                if (curLineupVal && allSessions.some(s => s.id === curLineupVal)) {
+                    lineupMatchSel.value = curLineupVal;
+                } else if (allSessions.length > 0) {
+                    lineupMatchSel.selectedIndex = 0; // Default to first available session
+                }
+            }
         }
 
         function addNewPracticeSession() {
@@ -780,17 +864,24 @@
                 targetTab.classList.add('border-aia-red', 'text-aia-red');
                 targetTab.classList.remove('border-transparent', 'text-slate-500');
             }
-            if (tabId === 'lineup') resetAndBuildLineup();
+            if (tabId === 'lineup') {
+                renderPracticeSelect();
+                resetAndBuildLineup();
+            }
         }
 
         function switchToPlayerRole() {
             currentRole = 'player';
-            document.getElementById('rolePlayerBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all bg-aia-red text-white shadow";
-            document.getElementById('roleCoachBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+            document.getElementById('rolePlayerBtn').className = "px-2 py-1 rounded-md font-bold transition-all bg-aia-red text-white shadow";
+            document.getElementById('roleCoachBtn').className = "px-2 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+            document.getElementById('roleAdminBtn').className = "px-2 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
             document.getElementById('tab-squad').classList.add('hidden');
             document.getElementById('tab-lineup').classList.add('hidden');
             document.getElementById('coachPracticeCreatorBox').classList.add('hidden');
+            document.getElementById('adminPanelBox').classList.add('hidden');
             switchTab('schedule');
+            renderMatches();
+            renderPracticeCard();
         }
 
         function requestCoachRole() {
@@ -810,12 +901,96 @@
                 document.getElementById('coachAuthError').classList.add('hidden');
                 document.getElementById('roleCoachBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all bg-aia-gold text-aia-navy shadow";
                 document.getElementById('rolePlayerBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+                document.getElementById('roleAdminBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
                 document.getElementById('tab-squad').classList.remove('hidden');
                 document.getElementById('tab-lineup').classList.remove('hidden');
                 document.getElementById('coachPracticeCreatorBox').classList.remove('hidden');
+                document.getElementById('adminPanelBox').classList.add('hidden');
+                renderMatches();
+                renderPracticeCard();
+                renderPracticeSelect();
+                resetAndBuildLineup();
             } else {
-                document.getElementById('coachAuthError').classList.add('hidden');
+                document.getElementById('coachAuthError').classList.remove('hidden');
             }
+        }
+
+        function requestAdminRole() {
+            document.getElementById('adminAuthModal').classList.remove('hidden');
+        }
+
+        function closeAdminAuthModal() {
+            document.getElementById('adminAuthModal').classList.add('hidden');
+        }
+
+        function verifyAdminPasscode() {
+            const input = document.getElementById('adminPasscodeInput');
+            if (input && input.value === adminPasscode) {
+                currentRole = 'admin';
+                closeAdminAuthModal();
+                input.value = '';
+                document.getElementById('adminAuthError').classList.add('hidden');
+                document.getElementById('roleAdminBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all bg-amber-500 text-slate-900 shadow";
+                document.getElementById('roleCoachBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+                document.getElementById('rolePlayerBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+                document.getElementById('tab-squad').classList.remove('hidden');
+                document.getElementById('tab-lineup').classList.remove('hidden');
+                document.getElementById('coachPracticeCreatorBox').classList.remove('hidden');
+                document.getElementById('adminPanelBox').classList.remove('hidden');
+                renderMatches();
+                renderPracticeCard();
+                renderPracticeSelect();
+                resetAndBuildLineup();
+            } else {
+                document.getElementById('adminAuthError').classList.remove('hidden');
+            }
+        }
+
+        function addNewPlayerToRoster() {
+            const nameInput = document.getElementById('newPlayerNameInput');
+            const posSelect = document.getElementById('newPlayerPosSelect');
+            const name = nameInput ? nameInput.value.trim() : "";
+            const pos = posSelect ? posSelect.value : "MF";
+
+            if (!name) return;
+            if (rawSquad.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                alert("Player already exists on roster!");
+                return;
+            }
+
+            rawSquad.push({ name: name, pos: pos, apps: 0, goals: 0, rating: 0 });
+            localStorage.setItem('aia_squad_data_v10', JSON.stringify(rawSquad));
+            syncCloudState();
+
+            nameInput.value = '';
+            populateRosterWithoutPositions();
+            renderSquadTable();
+            resetAndBuildLineup();
+            alert(`Player "${name}" added to roster!`);
+        }
+
+        function updateCoachPasscode() {
+            const input = document.getElementById('newCoachCodeInput');
+            const val = input ? input.value.trim() : "";
+            if (!val || val.length < 4) {
+                alert("Passcode must be at least 4 characters!");
+                return;
+            }
+            coachPasscode = val;
+            localStorage.setItem('aia_coach_code_v10', coachPasscode);
+            syncCloudState();
+            input.value = '';
+            alert(`Coach Mode passcode updated to: ${coachPasscode}`);
+        }
+
+        function setCoachOverrideRSVP(sessionId, playerName, status) {
+            if (!attendance[sessionId]) attendance[sessionId] = {};
+            attendance[sessionId][playerName] = status;
+            localStorage.setItem('aia_attendance_v10', JSON.stringify(attendance));
+            syncCloudState();
+            renderPracticeCard();
+            renderMatches();
+            resetAndBuildLineup();
         }
 
         function renderPracticeCard() {
@@ -829,6 +1004,7 @@
             const userStatus = pracAtt[currentActiveUser] || 'none';
             const cardBox = document.getElementById('practiceCardBox');
             const dict = t[currentLang];
+            const isCoachOrAdmin = currentRole === 'coach' || currentRole === 'admin';
 
             if (cardBox) {
                 cardBox.innerHTML = `
@@ -840,6 +1016,29 @@
                                 <button onclick="setRSVP('${prac.id}', 'no')" class="px-2.5 py-1 rounded font-bold ${userStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100'}">${dict.no}</button>
                             </div>
                         </div>
+
+                        ${isCoachOrAdmin ? `
+                            <div class="pt-3 border-t border-amber-200 bg-amber-50/60 p-3 rounded-xl space-y-2">
+                                <span class="text-xs font-bold text-amber-900 block flex items-center gap-1">
+                                    <i class="fa-solid fa-user-gear text-amber-600"></i> Coach Override Player RSVPs:
+                                </span>
+                                <div class="max-h-36 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 pr-1">
+                                    ${rawSquad.map(p => {
+                                        const pStatus = pracAtt[p.name] || 'none';
+                                        return `
+                                            <div class="flex items-center justify-between bg-white p-1.5 px-2 rounded border border-slate-200 text-[11px]">
+                                                <span class="font-semibold text-slate-800 truncate">${p.name}</span>
+                                                <div class="flex gap-1">
+                                                    <button onclick="setCoachOverrideRSVP('${prac.id}', '${p.name}', 'yes')" class="px-1.5 py-0.5 rounded font-bold ${pStatus === 'yes' ? 'bg-emerald-600 text-white' : 'bg-slate-100'}">Y</button>
+                                                    <button onclick="setCoachOverrideRSVP('${prac.id}', '${p.name}', 'no')" class="px-1.5 py-0.5 rounded font-bold ${pStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100'}">N</button>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
                         <div class="pt-2 border-t border-slate-100 space-y-2">
                             <span class="text-xs font-bold text-slate-700 block">${dict.addGuest}:</span>
                             <div class="flex gap-2 flex-wrap">
@@ -916,6 +1115,7 @@
             const upcoming = matches.filter(m => !isPast(m.isoDate));
             const past = matches.filter(m => isPast(m.isoDate)).slice().reverse();
             const dict = t[currentLang];
+            const isCoachOrAdmin = currentRole === 'coach' || currentRole === 'admin';
 
             if (upcomingContainer) {
                 upcomingContainer.innerHTML = upcoming.map(m => {
@@ -939,6 +1139,27 @@
                                     <button onclick="setRSVP('${m.id}', 'no')" class="px-2 py-1 rounded text-xs font-bold ${userStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100'}">${dict.no}</button>
                                 </div>
                             </div>
+
+                            ${isCoachOrAdmin ? `
+                                <div class="pt-2 border-t border-amber-200 bg-amber-50/60 p-2.5 rounded-lg space-y-1.5">
+                                    <span class="text-[11px] font-bold text-amber-900 block">Coach Override Player RSVPs:</span>
+                                    <div class="max-h-28 overflow-y-auto grid grid-cols-2 gap-1 pr-1">
+                                        ${rawSquad.map(p => {
+                                            const pStatus = matchAtt[p.name] || 'none';
+                                            return `
+                                                <div class="flex items-center justify-between bg-white p-1 rounded border text-[10px]">
+                                                    <span class="font-semibold truncate">${p.name.split(' ')[0]}</span>
+                                                    <div class="flex gap-0.5">
+                                                        <button onclick="setCoachOverrideRSVP('${m.id}', '${p.name}', 'yes')" class="px-1 py-0.5 rounded font-bold ${pStatus === 'yes' ? 'bg-emerald-600 text-white' : 'bg-slate-100'}">Y</button>
+                                                        <button onclick="setCoachOverrideRSVP('${m.id}', '${p.name}', 'no')" class="px-1 py-0.5 rounded font-bold ${pStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100'}">N</button>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
                             <div class="pt-2 border-t border-slate-100 space-y-2">
                                 <div class="flex gap-2 flex-wrap">
                                     <input type="text" id="guestName_${m.id}" placeholder="${dict.guestNamePlaceholder}" class="flex-1 min-w-[120px] bg-slate-50 border rounded-lg p-1.5 text-xs font-semibold">
@@ -1028,7 +1249,11 @@
 
         function resetAndBuildLineup() {
             const lineupMatchSel = document.getElementById('lineupMatchSelect');
+            if (!lineupMatchSel || !lineupMatchSel.value) {
+                renderPracticeSelect();
+            }
             if (!lineupMatchSel || !lineupMatchSel.value) return;
+            
             const sessionId = lineupMatchSel.value;
             if (!lineupData[sessionId]) lineupData[sessionId] = {};
             pitchAssignments = lineupData[sessionId];
@@ -1094,20 +1319,29 @@
             const sessAtt = attendance[sessionId] || {};
             const guests = sessionGuests[sessionId] || [];
             
-            const attendingYesNames = Object.keys(sessAtt).filter(name => sessAtt[name] === 'yes');
+            const filterMode = document.getElementById('lineupRosterFilter') ? document.getElementById('lineupRosterFilter').value : 'confirmed';
             
-            let allAvailable = [
-                ...attendingYesNames.map(name => {
-                    const p = rawSquad.find(x => x.name === name);
-                    return { name: name, pos: p ? p.pos : 'MF', rating: p ? p.rating : 0 };
-                }),
-                ...guests.map(g => ({ name: g.name, pos: g.pos, rating: 0 }))
-            ];
+            let allAvailable = [];
+            if (filterMode === 'all') {
+                allAvailable = [
+                    ...rawSquad.map(p => ({ name: p.name, pos: p.pos, rating: p.rating, status: sessAtt[p.name] || 'none' })),
+                    ...guests.map(g => ({ name: g.name, pos: g.pos, rating: 0, status: 'yes' }))
+                ];
+            } else {
+                const attendingYesNames = Object.keys(sessAtt).filter(name => sessAtt[name] === 'yes');
+                allAvailable = [
+                    ...attendingYesNames.map(name => {
+                        const p = rawSquad.find(x => x.name === name);
+                        return { name: name, pos: p ? p.pos : 'MF', rating: p ? p.rating : 0, status: 'yes' };
+                    }),
+                    ...guests.map(g => ({ name: g.name, pos: g.pos, rating: 0, status: 'yes' }))
+                ];
+            }
 
             allAvailable.sort((a, b) => b.rating - a.rating);
             
             const attBadge = document.getElementById('totalAttendingBadge');
-            if (attBadge) attBadge.textContent = allAvailable.length + " Confirmed";
+            if (attBadge) attBadge.textContent = allAvailable.length + " Listed";
 
             const container = document.getElementById('positionPanelsContainer');
             if (!container) return;
@@ -1118,18 +1352,19 @@
                         const isSelected = selectedPlayerForTap === item.name;
                         const isAssigned = Object.values(pitchAssignments).includes(item.name);
                         const stars = item.rating > 0 ? '★'.repeat(item.rating) : '☆ (Unassigned)';
+                        const rsvpLabel = item.status === 'yes' ? '✅ Yes' : item.status === 'no' ? '❌ No' : '❓ Pending';
                         return `
                             <div onclick="handleSquadPlayerClick('${item.name}')" class="p-2 rounded-lg border text-xs cursor-pointer flex justify-between items-center ${isSelected ? 'player-card-selected' : isAssigned ? 'bg-slate-200 opacity-60' : 'bg-white'}">
                                 <div>
                                     <span class="font-bold text-slate-900">${item.name}</span>
-                                    <div class="text-[10px] text-amber-500 font-bold">${stars}</div>
+                                    <div class="text-[10px] text-amber-500 font-bold">${stars} <span class="text-slate-400 font-normal">(${rsvpLabel})</span></div>
                                 </div>
                                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isAssigned ? 'bg-aia-gold text-aia-navy' : 'bg-emerald-100 text-emerald-800'}">
                                     ${isAssigned ? 'On Pitch' : 'Available'}
                                 </span>
                             </div>
                         `;
-                    }).join('') || '<p class="text-xs text-slate-400 italic">No players confirmed "Yes" for this session.</p>'}
+                    }).join('') || '<p class="text-xs text-slate-400 italic">No players found for selection.</p>'}
                 </div>
             `;
 
@@ -1200,8 +1435,12 @@
                         if (data.attendance) attendance = data.attendance;
                         if (data.sessionGuests) sessionGuests = data.sessionGuests;
                         if (data.lineupData) lineupData = data.lineupData;
-                        if (data.rawSquad) rawSquad = data.rawSquad;
+                        if (data.rawSquad) {
+                            rawSquad = data.rawSquad;
+                            populateRosterWithoutPositions();
+                        }
                         if (data.userPins) userPins = data.userPins;
+                        if (data.coachPasscode) coachPasscode = data.coachPasscode;
                         if (data.practiceDates) {
                             practiceDates = data.practiceDates;
                             renderPracticeSelect();
@@ -1225,6 +1464,7 @@
                     lineupData: lineupData,
                     rawSquad: rawSquad,
                     userPins: userPins,
+                    coachPasscode: coachPasscode,
                     practiceDates: practiceDates
                 }, { merge: true });
             } catch(e) {}
