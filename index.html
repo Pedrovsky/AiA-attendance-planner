@@ -757,7 +757,7 @@
                 syncCloudState();
             } else if (userPins[name] !== pin) {
                 errEl.textContent = currentLang === 'de' ? "Falsche PIN. Bitte erneut versuchen." : "Incorrect PIN. Please try again.";
-                errEl.classList.add('hidden');
+                errEl.classList.remove('hidden');
                 return;
             }
 
@@ -895,8 +895,8 @@
         function switchToPlayerRole() {
             currentRole = 'player';
             document.getElementById('rolePlayerBtn').className = "px-2 py-1 rounded-md font-bold transition-all bg-aia-red text-white shadow";
-            document.getElementById('roleCoachBtn').className = "px-2 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
-            document.getElementById('roleAdminBtn').className = "px-2 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+            document.getElementById('roleCoachBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
+            document.getElementById('roleAdminBtn').className = "px-2.5 py-1 rounded-md font-bold transition-all text-slate-300 hover:text-white";
             document.getElementById('tab-squad').classList.add('hidden');
             document.getElementById('tab-lineup').classList.add('hidden');
             document.getElementById('coachPracticeCreatorBox').classList.add('hidden');
@@ -1020,4 +1020,543 @@
 
         function renderPracticeCard() {
             const pracSelectEl = document.getElementById('practiceDateSelect');
-            const pracId = pracSelectEl && pracSelectEl.value ? pracSelectEl.value : (practiceDates[0] ? practiceDates[0].
+            const pracId = pracSelectEl && pracSelectEl.value ? pracSelectEl.value : (practiceDates[0] ? practiceDates[0].id : null);
+            if (!pracId) return;
+            const prac = practiceDates.find(p => p.id === pracId) || practiceDates[0];
+            const pracAtt = attendance[prac.id] || {};
+            const guests = sessionGuests[prac.id] || [];
+
+            const userStatus = pracAtt[currentActiveUser] || 'none';
+            const cardBox = document.getElementById('practiceCardBox');
+            const dict = t[currentLang];
+            const isCoachOrAdmin = currentRole === 'coach' || currentRole === 'admin';
+
+            if (cardBox) {
+                cardBox.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-700">${dict.myRsvp} (${currentActiveUser || 'Guest'}):</span>
+                            <div class="flex gap-1">
+                                <button onclick="setRSVP('${prac.id}', 'yes')" class="px-2.5 py-1 rounded font-bold ${userStatus === 'yes' ? 'bg-emerald-600 text-white' : 'bg-slate-100'}">${dict.yes}</button>
+                                <button onclick="setRSVP('${prac.id}', 'no')" class="px-2.5 py-1 rounded font-bold ${userStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100'}">${dict.no}</button>
+                            </div>
+                        </div>
+
+                        ${isCoachOrAdmin ? `
+                            <div class="pt-3 border-t border-amber-200 bg-amber-50/60 p-3 rounded-xl space-y-2">
+                                <span class="text-xs font-bold text-amber-900 block flex items-center gap-1">
+                                    <i class="fa-solid fa-user-gear text-amber-600"></i> Coach Override Player RSVPs:
+                                </span>
+                                <div class="max-h-36 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 pr-1">
+                                    ${rawSquad.map(p => {
+                                        const pStatus = pracAtt[p.name] || 'none';
+                                        return `
+                                            <div class="flex items-center justify-between bg-white p-1.5 px-2 rounded border border-slate-200 text-[11px]">
+                                                <span class="font-semibold text-slate-800 truncate">${p.name}</span>
+                                                <div class="flex gap-1">
+                                                    <button onclick="setCoachOverrideRSVP('${prac.id}', '${p.name}', 'yes')" class="px-1.5 py-0.5 rounded font-bold ${pStatus === 'yes' ? 'bg-emerald-600 text-white' : 'bg-slate-100'}">Y</button>
+                                                    <button onclick="setCoachOverrideRSVP('${prac.id}', '${p.name}', 'no')" class="px-1.5 py-0.5 rounded font-bold ${pStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100'}">N</button>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <div class="pt-2 border-t border-slate-100 space-y-2">
+                            <span class="text-xs font-bold text-slate-700 block">${dict.addGuest}:</span>
+                            <div class="flex gap-2 flex-wrap">
+                                <input type="text" id="guestName_${prac.id}" placeholder="${dict.guestNamePlaceholder}" class="flex-1 min-w-[120px] bg-slate-50 border rounded-lg p-1.5 text-xs font-semibold">
+                                <select id="guestPos_${prac.id}" class="bg-slate-50 border rounded-lg p-1.5 text-xs font-bold">
+                                    <option value="GK">GK</option>
+                                    <option value="DF">DF</option>
+                                    <option value="MF">MF</option>
+                                    <option value="FW">FW</option>
+                                </select>
+                                <button onclick="addGuest('${prac.id}')" class="bg-aia-navy text-white px-3 py-1.5 rounded-lg text-xs font-bold">${dict.addGuest}</button>
+                            </div>
+                            ${guests.length > 0 ? `
+                                <div class="flex flex-wrap gap-1.5 pt-1">
+                                    ${guests.map((g, gIdx) => `
+                                        <span class="bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-bold px-2 py-1 rounded-md flex items-center gap-1">
+                                            <span>👤 ${g.name} (${g.pos})</span>
+                                            <button onclick="removeGuest('${prac.id}', ${gIdx})" class="text-rose-600 hover:text-rose-800 ml-1 font-extrabold">&times;</button>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function setRSVP(sessionId, status) {
+            if (!currentActiveUser) return;
+            
+            let sessionIsoDate = null;
+            let sessionType = 'practice';
+            
+            const prac = practiceDates.find(p => p.id === sessionId);
+            if (prac) {
+                sessionIsoDate = prac.isoDate;
+                sessionType = 'practice';
+            } else {
+                const match = matches.find(m => m.id === sessionId);
+                if (match) {
+                    sessionIsoDate = match.isoDate;
+                    sessionType = 'match';
+                }
+            }
+
+            if (sessionIsoDate && currentRole === 'player') {
+                const now = new Date();
+                const sessionTime = new Date(sessionIsoDate);
+                const diffHours = (sessionTime - now) / (1000 * 60 * 60);
+
+                if (sessionType === 'practice' && diffHours < 8) {
+                    alert(currentLang === 'de' 
+                        ? "Änderungen sind innerhalb von 8 Stunden vor dem Training nicht erlaubt. Bitte teile dies dem Trainerteam über WhatsApp mit." 
+                        : "Changes are not allowed within 8 hours of practice. Please communicate this to the coaching team via WhatsApp.");
+                    return;
+                }
+                if (sessionType === 'match' && diffHours < 24) {
+                    alert(currentLang === 'de' 
+                        ? "Änderungen sind innerhalb von 24 Stunden vor dem Spiel nicht erlaubt. Bitte teile dies dem Trainerteam über WhatsApp mit." 
+                        : "Changes are not allowed within 24 hours of a match. Please communicate this to the coaching team via WhatsApp.");
+                    return;
+                }
+            }
+
+            if (!attendance[sessionId]) attendance[sessionId] = {};
+            attendance[sessionId][currentActiveUser] = status;
+            localStorage.setItem('aia_attendance_v10', JSON.stringify(attendance));
+            syncCloudState();
+            renderPracticeCard();
+            renderMatches();
+            resetAndBuildLineup();
+        }
+
+        function addGuest(sessionId) {
+            const nameInput = document.getElementById(`guestName_${sessionId}`);
+            const posSelect = document.getElementById(`guestPos_${sessionId}`);
+            const name = nameInput ? nameInput.value.trim() : "";
+            const pos = posSelect ? posSelect.value : "MF";
+
+            if (!name) return;
+            if (!sessionGuests[sessionId]) sessionGuests[sessionId] = [];
+            
+            sessionGuests[sessionId].push({ name: `${name} (Guest)`, pos: pos });
+            localStorage.setItem('aia_guests_v10', JSON.stringify(sessionGuests));
+            syncCloudState();
+            
+            if (nameInput) nameInput.value = '';
+            renderPracticeCard();
+            renderMatches();
+            resetAndBuildLineup();
+        }
+
+        function removeGuest(sessionId, guestIdx) {
+            if (sessionGuests[sessionId]) {
+                sessionGuests[sessionId].splice(guestIdx, 1);
+                localStorage.setItem('aia_guests_v10', JSON.stringify(sessionGuests));
+                syncCloudState();
+                renderPracticeCard();
+                renderMatches();
+                resetAndBuildLineup();
+            }
+        }
+
+        function renderMatches() {
+            const upcomingContainer = document.getElementById('upcomingMatchesList');
+            const pastContainer = document.getElementById('pastMatchesList');
+
+            const upcoming = matches.filter(m => !isPast(m.isoDate));
+            const past = matches.filter(m => isPast(m.isoDate)).slice().reverse();
+            const dict = t[currentLang];
+            const isCoachOrAdmin = currentRole === 'coach' || currentRole === 'admin';
+
+            if (upcomingContainer) {
+                upcomingContainer.innerHTML = upcoming.map(m => {
+                    const matchAtt = attendance[m.id] || {};
+                    const userStatus = matchAtt[currentActiveUser] || 'none';
+                    const meetingTime = getMeetingTime(m.isoDate);
+                    return `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                            <div class="flex justify-between font-bold text-xs">
+                                <span>${m.type} • ${m.date}</span>
+                                <span class="text-aia-red font-extrabold">${dict.meetingTime} ${meetingTime}</span>
+                            </div>
+                            <div class="font-bold text-slate-900 text-sm">
+                                ${m.home ? '🏠 AIA vs ' + m.opponent : '✈️ ' + m.opponent + ' vs AIA'}
+                            </div>
+                            <div class="flex justify-between items-center text-xs border-t pt-2">
+                                <span class="text-slate-500 font-medium">${dict.myRsvp}</span>
+                                <div class="flex gap-1">
+                                    <button onclick="setRSVP('${m.id}', 'yes')" class="px-2 py-1 rounded text-xs font-bold ${userStatus === 'yes' ? 'bg-emerald-600 text-white' : 'bg-slate-100'}">${dict.yes}</button>
+                                    <button onclick="setRSVP('${m.id}', 'no')" class="px-2 py-1 rounded text-xs font-bold ${userStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100'}">${dict.no}</button>
+                                </div>
+                            </div>
+
+                            ${isCoachOrAdmin ? `
+                                <div class="pt-2 border-t border-amber-200 bg-amber-50/60 p-2.5 rounded-lg space-y-1.5">
+                                    <span class="text-[11px] font-bold text-amber-900 block">Coach Override Player RSVPs:</span>
+                                    <div class="max-h-28 overflow-y-auto grid grid-cols-2 gap-1 pr-1">
+                                        ${rawSquad.map(p => {
+                                            const pStatus = matchAtt[p.name] || 'none';
+                                            return `
+                                                <div class="flex items-center justify-between bg-white p-1 rounded border text-[10px]">
+                                                    <span class="font-semibold truncate">${p.name.split(' ')[0]}</span>
+                                                    <div class="flex gap-0.5">
+                                                        <button onclick="setCoachOverrideRSVP('${m.id}', '${p.name}', 'yes')" class="px-1 py-0.5 rounded font-bold ${pStatus === 'yes' ? 'bg-emerald-600 text-white' : 'bg-slate-100'}">Y</button>
+                                                        <button onclick="setCoachOverrideRSVP('${m.id}', '${p.name}', 'no')" class="px-1 py-0.5 rounded font-bold ${pStatus === 'no' ? 'bg-rose-600 text-white' : 'bg-slate-100'}">N</button>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('') || '<p class="text-xs text-slate-400 col-span-2">No upcoming matches.</p>';
+            }
+
+            if (pastContainer) {
+                pastContainer.innerHTML = past.map(m => {
+                    const meetingTime = getMeetingTime(m.isoDate);
+                    return `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 opacity-90">
+                            <div class="flex justify-between font-bold text-xs text-slate-500">
+                                <span>${m.type} • ${m.date}</span>
+                                <span>Result: <strong class="text-slate-900">${m.score}</strong></span>
+                            </div>
+                            <div class="font-bold text-slate-900 text-sm">
+                                ${m.home ? '🏠 AIA vs ' + m.opponent : '✈️ ' + m.opponent + ' vs AIA'}
+                            </div>
+                            <div class="text-[11px] text-slate-500">
+                                Meeting Time (Treffpunkt): <span class="font-bold text-slate-700">${meetingTime}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('') || '<p class="text-xs text-slate-400 col-span-2">No past matches.</p>';
+            }
+        }
+
+        function renderSquadTable() {
+            const table = document.getElementById('squadTable');
+            if (!table) return;
+            const isCoachOrAdmin = currentRole === 'coach' || currentRole === 'admin';
+
+            table.innerHTML = rawSquad.map((p, idx) => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-bold text-slate-900">${p.name}</td>
+                    <td class="py-3 px-4">
+                        <select onchange="updatePlayerPos(${idx}, this.value)" class="border border-slate-300 rounded p-1 text-xs font-bold bg-white">
+                            <option value="GK" ${p.pos==='GK'?'selected':''}>GK</option>
+                            <option value="DF" ${p.pos==='DF'?'selected':''}>DF</option>
+                            <option value="MF" ${p.pos==='MF'?'selected':''}>MF</option>
+                            <option value="FW" ${p.pos==='FW'?'selected':''}>FW</option>
+                        </select>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex gap-1 text-amber-400">
+                            ${[1,2,3,4,5].map(star => `<i class="fa-${star <= p.rating ? 'solid' : 'regular'} fa-star cursor-pointer" onclick="updatePlayerRating(${idx}, ${star})"></i>`).join('')}
+                        </div>
+                        <span class="text-[10px] text-slate-400">${p.rating === 0 ? (currentLang==='de'?'Unbestimmt':'Unassigned') : p.rating + ' / 5'}</span>
+                    </td>
+                    <td class="py-3 px-4 font-semibold text-slate-600">
+                        ${isCoachOrAdmin ? `
+                            <div class="flex items-center gap-1.5">
+                                <input type="number" min="0" value="${p.apps}" onchange="updatePlayerStat(${idx}, 'apps', this.value)" class="w-14 border rounded p-1 text-xs text-center font-bold bg-white" title="Appearances"> apps / 
+                                <input type="number" min="0" value="${p.goals}" onchange="updatePlayerStat(${idx}, 'goals', this.value)" class="w-14 border rounded p-1 text-xs text-center font-bold text-aia-red bg-white" title="Goals"> goals
+                            </div>
+                        ` : `
+                            ${p.apps} apps / <span class="text-aia-red font-bold">${p.goals} goals</span>
+                        `}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updatePlayerPos(idx, newPos) {
+            rawSquad[idx].pos = newPos;
+            localStorage.setItem('aia_squad_data_v10', JSON.stringify(rawSquad));
+            syncCloudState();
+        }
+
+        function updatePlayerRating(idx, rating) {
+            rawSquad[idx].rating = rating;
+            localStorage.setItem('aia_squad_data_v10', JSON.stringify(rawSquad));
+            syncCloudState();
+            renderSquadTable();
+            resetAndBuildLineup();
+        }
+
+        function updatePlayerStat(idx, field, val) {
+            const num = parseInt(val) || 0;
+            rawSquad[idx][field] = num;
+            localStorage.setItem('aia_squad_data_v10', JSON.stringify(rawSquad));
+            syncCloudState();
+        }
+
+        function resetAndBuildLineup() {
+            const lineupMatchSel = document.getElementById('lineupMatchSelect');
+            if (!lineupMatchSel || !lineupMatchSel.value) {
+                renderPracticeSelect();
+            }
+            if (!lineupMatchSel || !lineupMatchSel.value) return;
+            
+            const sessionId = lineupMatchSel.value;
+            if (!lineupData[sessionId]) lineupData[sessionId] = {};
+            pitchAssignments = lineupData[sessionId];
+            buildPitch();
+            renderAvailableSquadForLineup();
+        }
+
+        function getFormationRows(tactic) {
+            if (tactic === '433') {
+                return [
+                    [{pos:'FW',label:'LW'}, {pos:'FW',label:'ST'}, {pos:'FW',label:'RW'}],
+                    [{pos:'MF',label:'CM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'CM'}],
+                    [{pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}],
+                    [{pos:'GK',label:'GK'}]
+                ];
+            } else if (tactic === '442') {
+                return [
+                    [{pos:'FW',label:'ST'}, {pos:'FW',label:'ST'}],
+                    [{pos:'MF',label:'LM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'RM'}],
+                    [{pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}],
+                    [{pos:'GK',label:'GK'}]
+                ];
+            } else if (tactic === '352') {
+                return [
+                    [{pos:'FW',label:'ST'}, {pos:'FW',label:'ST'}],
+                    [{pos:'MF',label:'LM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'CAM'}, {pos:'MF',label:'CM'}, {pos:'MF',label:'RM'}],
+                    [{pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}],
+                    [{pos:'GK',label:'GK'}]
+                ];
+            } else { // 4-2-3-1 default
+                return [
+                    [{pos:'FW',label:'ST'}],
+                    [{pos:'MF',label:'LAM'}, {pos:'MF',label:'CAM'}, {pos:'MF',label:'RAM'}],
+                    [{pos:'MF',label:'CDM'}, {pos:'MF',label:'CDM'}],
+                    [{pos:'DF',label:'LB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'CB'}, {pos:'DF',label:'RB'}],
+                    [{pos:'GK',label:'GK'}]
+                ];
+            }
+        }
+
+        function changeTactic() {
+            const tSel = document.getElementById('tacticSelect');
+            if (tSel) currentTactic = tSel.value;
+            
+            const fTitle = document.getElementById('formationTitle');
+            if (fTitle) {
+                const formatted = currentTactic.split('').join('-');
+                fTitle.textContent = `Formation: ${formatted}`;
+            }
+            buildPitch();
+        }
+
+        function buildPitch() {
+            const rowGroups = getFormationRows(currentTactic);
+            const rowsContainer = document.getElementById('pitchRows');
+            if (!rowsContainer) return;
+            
+            const lineupMatchSel = document.getElementById('lineupMatchSelect');
+            const sessionId = lineupMatchSel ? lineupMatchSel.value : null;
+            const sessAtt = sessionId ? (attendance[sessionId] || {}) : {};
+            const guests = sessionId ? (sessionGuests[sessionId] || []) : {};
+            
+            let availablePlayers = [
+                ...rawSquad.map(p => ({ name: p.name, pos: p.pos, rating: p.rating, status: sessAtt[p.name] || 'none' })),
+                ...guests.map(g => ({ name: g.name, pos: g.pos, rating: 0, status: 'yes' }))
+            ];
+
+            let globalSlotIdx = 0;
+            rowsContainer.innerHTML = rowGroups.map(group => {
+                return `
+                    <div class="flex flex-nowrap justify-center items-center w-full gap-1 sm:gap-2 px-1">
+                        ${group.map(slot => {
+                            const curIdx = globalSlotIdx++;
+                            const assignedName = pitchAssignments[curIdx] || "";
+                            
+                            let slotSortedPlayers = [...availablePlayers];
+                            slotSortedPlayers.sort((a, b) => {
+                                let aMatch = (a.pos === slot.pos) ? 0 : 1;
+                                let bMatch = (b.pos === slot.pos) ? 0 : 1;
+                                if (aMatch !== bMatch) return aMatch - bMatch;
+                                if (b.rating !== a.rating) return b.rating - a.rating;
+                                return a.name.localeCompare(b.name);
+                            });
+
+                            return `
+                                <div class="flex-1 max-w-[95px] sm:max-w-[110px] h-16 sm:h-20 bg-slate-900/90 border-2 ${assignedName ? 'border-aia-gold bg-slate-900' : 'border-white/40'} rounded-xl flex flex-col items-center justify-center p-1 relative shadow">
+                                    <span class="text-[8px] font-black uppercase text-aia-gold bg-slate-800 px-1 rounded mb-1">${slot.label}</span>
+                                    <select onchange="handlePitchSlotSelect(${curIdx}, this.value)" class="w-full text-[10px] font-bold bg-slate-800 text-white rounded p-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-aia-gold">
+                                        <option value="">-- Assign --</option>
+                                        ${slotSortedPlayers.map(p => {
+                                            const displayName = formatTacticPlayerName(p.name);
+                                            const selectedAttr = (p.name === assignedName) ? 'selected' : '';
+                                            return `<option value="${p.name}" ${selectedAttr}>${displayName} (${p.pos}${p.rating > 0 ? ', ' + p.rating + '★' : ''})</option>`;
+                                        }).join('')}
+                                    </select>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }).join('');
+
+            const assignedCount = Object.keys(pitchAssignments).length;
+            const countLbl = document.getElementById('startingCountLabel');
+            if (countLbl) countLbl.textContent = `Starting 11: ${assignedCount} / 11`;
+        }
+
+        function handlePitchSlotSelect(slotIdx, playerName) {
+            const lineupMatchSel = document.getElementById('lineupMatchSelect');
+            if (!lineupMatchSel || !lineupMatchSel.value) return;
+            const sessionId = lineupMatchSel.value;
+            if (!lineupData[sessionId]) lineupData[sessionId] = {};
+            
+            if (playerName === "") {
+                delete lineupData[sessionId][slotIdx];
+            } else {
+                Object.keys(lineupData[sessionId]).forEach(k => {
+                    if (lineupData[sessionId][k] === playerName) {
+                        delete lineupData[sessionId][k];
+                    }
+                });
+                lineupData[sessionId][slotIdx] = playerName;
+            }
+            pitchAssignments = lineupData[sessionId];
+            localStorage.setItem('aia_lineups_v10', JSON.stringify(lineupData));
+            syncCloudState();
+            buildPitch();
+            renderAvailableSquadForLineup();
+        }
+
+        function renderAvailableSquadForLineup() {
+            const lineupMatchSel = document.getElementById('lineupMatchSelect');
+            if (!lineupMatchSel || !lineupMatchSel.value) return;
+            const sessionId = lineupMatchSel.value;
+            const sessAtt = attendance[sessionId] || {};
+            const guests = sessionGuests[sessionId] || [];
+            
+            const filterMode = document.getElementById('lineupRosterFilter') ? document.getElementById('lineupRosterFilter').value : 'confirmed';
+            
+            let allAvailable = [];
+            if (filterMode === 'all') {
+                allAvailable = [
+                    ...rawSquad.map(p => ({ name: p.name, pos: p.pos, rating: p.rating, status: sessAtt[p.name] || 'none' })),
+                    ...guests.map(g => ({ name: g.name, pos: g.pos, rating: 0, status: 'yes' }))
+                ];
+            } else {
+                const attendingYesNames = Object.keys(sessAtt).filter(name => sessAtt[name] === 'yes');
+                allAvailable = [
+                    ...attendingYesNames.map(name => {
+                        const p = rawSquad.find(x => x.name === name);
+                        return { name: name, pos: p ? p.pos : 'MF', rating: p ? p.rating : 0, status: 'yes' };
+                    }),
+                    ...guests.map(g => ({ name: g.name, pos: g.pos, rating: 0, status: 'yes' }))
+                ];
+            }
+
+            allAvailable.sort((a, b) => b.rating - a.rating);
+            
+            const attBadge = document.getElementById('totalAttendingBadge');
+            if (attBadge) attBadge.textContent = allAvailable.length + " Listed";
+
+            const container = document.getElementById('positionPanelsContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="space-y-1.5">
+                    ${allAvailable.map(item => {
+                        const isAssigned = Object.values(pitchAssignments).includes(item.name);
+                        const stars = item.rating > 0 ? '★'.repeat(item.rating) : '☆ (Unassigned)';
+                        const rsvpLabel = item.status === 'yes' ? '✅ Yes' : item.status === 'no' ? '❌ No' : '❓ Pending';
+                        const displayName = formatTacticPlayerName(item.name);
+                        return `
+                            <div class="p-2 rounded-lg border text-xs flex justify-between items-center ${isAssigned ? 'bg-slate-200 opacity-60' : 'bg-white'}">
+                                <div>
+                                    <span class="font-bold text-slate-900">${displayName}</span>
+                                    <div class="text-[10px] text-amber-500 font-bold">${stars} <span class="text-slate-400 font-normal">(${rsvpLabel})</span></div>
+                                </div>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isAssigned ? 'bg-aia-gold text-aia-navy' : 'bg-emerald-100 text-emerald-800'}">
+                                    ${isAssigned ? 'On Pitch' : 'Available'}
+                                </span>
+                            </div>
+                        `;
+                    }).join('') || '<p class="text-xs text-slate-400 italic">No players found for selection.</p>'}
+                </div>
+            `;
+
+            const assignedNames = Object.values(pitchAssignments);
+            const benchNames = allAvailable.filter(item => !assignedNames.includes(item.name));
+            document.getElementById('benchCountBadge').textContent = benchNames.length + " Substitutes";
+
+            const benchList = document.getElementById('substitutesBenchList');
+            if (benchList) {
+                benchList.innerHTML = benchNames.map(item => `
+                    <div class="px-3 py-1.5 rounded-lg border text-xs font-bold bg-slate-50 text-slate-800 flex items-center gap-1.5">
+                        <span>${formatTacticPlayerName(item.name)}</span>
+                        <span class="text-[10px] text-amber-500">${item.rating > 0 ? '★'.repeat(item.rating) : ''}</span>
+                    </div>
+                `).join('') || '<p class="text-xs text-slate-400 italic">No substitutes on bench.</p>';
+            }
+        }
+
+        function initFirebaseRealtimeSync() {
+            if (!db) return;
+            try {
+                db.collection("aia").doc("live_portal_state").onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.attendance) attendance = data.attendance;
+                        if (data.sessionGuests) sessionGuests = data.sessionGuests;
+                        if (data.lineupData) lineupData = data.lineupData;
+                        if (data.rawSquad) {
+                            rawSquad = data.rawSquad;
+                        }
+                        if (data.userPins) userPins = data.userPins;
+                        if (data.coachPasscode) coachPasscode = data.coachPasscode;
+                        if (data.practiceDates) {
+                            practiceDates = data.practiceDates;
+                            renderPracticeSelect();
+                        }
+
+                        const modal = document.getElementById('identityModal');
+                        const isModalOpen = modal && !modal.classList.contains('hidden');
+                        if (!isModalOpen) {
+                            renderPracticeCard();
+                            renderMatches();
+                            renderSquadTable();
+                            resetAndBuildLineup();
+                        }
+                    }
+                });
+            } catch(e) {}
+        }
+
+        function syncCloudState() {
+            if (!db) return;
+            try {
+                db.collection("aia").doc("live_portal_state").set({
+                    attendance: attendance,
+                    sessionGuests: sessionGuests,
+                    lineupData: lineupData,
+                    rawSquad: rawSquad,
+                    userPins: userPins,
+                    coachPasscode: coachPasscode,
+                    practiceDates: practiceDates
+                }, { merge: true });
+            } catch(e) {}
+        }
+
+        window.onload = initData;
+    </script>
+</body>
+</html>
