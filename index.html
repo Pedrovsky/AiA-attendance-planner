@@ -808,25 +808,40 @@
             initFirebaseRealtimeSync();
         }
 
-        function renderPracticeSelect() {
+       function renderPracticeSelect() {
             const pracSelect = document.getElementById('practiceDateSelect');
             if (pracSelect) {
                 const curVal = pracSelect.value;
-                pracSelect.innerHTML = practiceDates.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
-                if (curVal && practiceDates.some(p => p.id === curVal)) {
+                // Filter out past practices so they disappear from the active dropdown
+                const upcomingPrac = practiceDates.filter(p => !isPast(p.isoDate));
+        
+                pracSelect.innerHTML = upcomingPrac.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
+                if (curVal && upcomingPrac.some(p => p.id === curVal)) {
                     pracSelect.value = curVal;
+                } else if (upcomingPrac.length > 0) {
+                    pracSelect.selectedIndex = 0;
                 }
             }
 
             const lineupMatchSel = document.getElementById('lineupMatchSelect');
             if (lineupMatchSel) {
                 const curLineupVal = lineupMatchSel.value;
+        
+                // Filter out past practices and past matches
+                const upcomingPrac = practiceDates.filter(p => !isPast(p.isoDate));
+                const upcomingMatches = matches.filter(m => !isPast(m.isoDate));
+
+                // Combine upcoming sessions into one array
                 const allSessions = [
-                    ...practiceDates.map(p => ({ id: p.id, label: `Practice: ${p.label}` })),
-                    ...matches.map(m => ({ id: m.id, label: `Match: vs ${m.opponent} (${m.date})` }))
+                    ...upcomingPrac.map(p => ({ id: p.id, label: `Practice: ${p.label}`, isoDate: p.isoDate })),
+                    ...upcomingMatches.map(m => ({ id: m.id, label: `Match: vs ${m.opponent} (${m.date})`, isoDate: m.isoDate }))
                 ];
+
+                // Sort all upcoming sessions chronologically by date/time
+                allSessions.sort((a, b) => new Date(a.isoDate) - new Date(b.isoDate));
+
                 lineupMatchSel.innerHTML = allSessions.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
-                
+        
                 if (curLineupVal && allSessions.some(s => s.id === curLineupVal)) {
                     lineupMatchSel.value = curLineupVal;
                 } else if (allSessions.length > 0) {
